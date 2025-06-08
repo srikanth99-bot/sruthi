@@ -57,6 +57,7 @@ const ProductManagementPage: React.FC<ProductManagementPageProps> = ({ onBack })
       XXL: false
     },
     supportsFeedingFriendly: false,
+    feedingType: 'non-feeding' as 'feeding' | 'non-feeding',
     stockQuantity: 0,
     tags: [] as string[]
   });
@@ -185,10 +186,10 @@ const ProductManagementPage: React.FC<ProductManagementPageProps> = ({ onBack })
       featured: productForm.featured,
       rating: 4.5,
       reviewCount: 0,
-      tags: productForm.tags,
+      tags: [...productForm.tags, productForm.feedingType],
       isStitchedDress: productForm.isStitchedDress,
       availableSizes: productForm.isStitchedDress ? productForm.availableSizes : undefined,
-      supportsFeedingFriendly: productForm.isStitchedDress ? productForm.supportsFeedingFriendly : undefined,
+      supportsFeedingFriendly: productForm.feedingType === 'feeding',
       stockQuantity: productForm.stockQuantity,
       createdAt: editingProduct?.createdAt || new Date().toISOString(),
       updatedAt: new Date().toISOString()
@@ -226,6 +227,7 @@ const ProductManagementPage: React.FC<ProductManagementPageProps> = ({ onBack })
         XXL: false
       },
       supportsFeedingFriendly: false,
+      feedingType: 'non-feeding',
       stockQuantity: 0,
       tags: []
     });
@@ -234,6 +236,7 @@ const ProductManagementPage: React.FC<ProductManagementPageProps> = ({ onBack })
   };
 
   const handleEditProduct = (product: Product) => {
+    const feedingType = product.supportsFeedingFriendly ? 'feeding' : 'non-feeding';
     setProductForm({
       name: product.name,
       categoryId: categories.find(cat => cat.name === product.category)?.id || '',
@@ -253,6 +256,7 @@ const ProductManagementPage: React.FC<ProductManagementPageProps> = ({ onBack })
         XXL: false
       },
       supportsFeedingFriendly: product.supportsFeedingFriendly || false,
+      feedingType: feedingType,
       stockQuantity: product.stockQuantity || 0,
       tags: product.tags
     });
@@ -558,6 +562,11 @@ const ProductManagementPage: React.FC<ProductManagementPageProps> = ({ onBack })
                             <span className="bg-pink-500 text-white text-xs font-bold px-2 py-1 rounded-full">
                               <Baby className="h-3 w-3 inline mr-1" />
                               Feeding
+                            </span>
+                          )}
+                          {!product.supportsFeedingFriendly && product.tags?.includes('non-feeding') && (
+                            <span className="bg-gray-500 text-white text-xs font-bold px-2 py-1 rounded-full">
+                              Non-Feeding
                             </span>
                           )}
                         </div>
@@ -980,22 +989,55 @@ const ProductManagementPage: React.FC<ProductManagementPageProps> = ({ onBack })
                             ))}
                           </div>
                         </div>
-
-                        <div className="flex items-center space-x-3">
-                          <input
-                            type="checkbox"
-                            id="supportsFeedingFriendly"
-                            checked={productForm.supportsFeedingFriendly}
-                            onChange={(e) => setProductForm({ ...productForm, supportsFeedingFriendly: e.target.checked })}
-                            className="w-5 h-5 text-pink-600 rounded focus:ring-pink-500"
-                          />
-                          <label htmlFor="supportsFeedingFriendly" className="font-medium text-gray-900">
-                            <Baby className="h-5 w-5 inline mr-2" />
-                            Feeding Friendly (for nursing mothers)
-                          </label>
-                        </div>
                       </div>
                     )}
+                  </div>
+
+                  {/* Feeding Type Selection */}
+                  <div className="border border-gray-200 rounded-xl p-6">
+                    <label className="block text-sm font-medium text-gray-700 mb-3">
+                      <Baby className="h-5 w-5 inline mr-2" />
+                      Feeding Type
+                    </label>
+                    <div className="grid grid-cols-2 gap-4">
+                      <label className="flex items-center space-x-3 p-4 border border-gray-300 rounded-xl cursor-pointer hover:bg-gray-50 transition-colors">
+                        <input
+                          type="radio"
+                          name="feedingType"
+                          value="feeding"
+                          checked={productForm.feedingType === 'feeding'}
+                          onChange={(e) => setProductForm({ 
+                            ...productForm, 
+                            feedingType: e.target.value as 'feeding' | 'non-feeding',
+                            supportsFeedingFriendly: e.target.value === 'feeding'
+                          })}
+                          className="w-4 h-4 text-pink-600 focus:ring-pink-500"
+                        />
+                        <div>
+                          <span className="font-medium text-gray-900">Feeding Friendly</span>
+                          <p className="text-sm text-gray-600">Suitable for nursing mothers</p>
+                        </div>
+                      </label>
+                      
+                      <label className="flex items-center space-x-3 p-4 border border-gray-300 rounded-xl cursor-pointer hover:bg-gray-50 transition-colors">
+                        <input
+                          type="radio"
+                          name="feedingType"
+                          value="non-feeding"
+                          checked={productForm.feedingType === 'non-feeding'}
+                          onChange={(e) => setProductForm({ 
+                            ...productForm, 
+                            feedingType: e.target.value as 'feeding' | 'non-feeding',
+                            supportsFeedingFriendly: e.target.value === 'feeding'
+                          })}
+                          className="w-4 h-4 text-gray-600 focus:ring-gray-500"
+                        />
+                        <div>
+                          <span className="font-medium text-gray-900">Non-Feeding</span>
+                          <p className="text-sm text-gray-600">Regular dress design</p>
+                        </div>
+                      </label>
+                    </div>
                   </div>
 
                   {/* Regular Product Options */}
