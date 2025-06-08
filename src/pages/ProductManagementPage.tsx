@@ -40,6 +40,7 @@ import {
 } from 'lucide-react';
 import { useStore } from '../store/useStore';
 import DragDropImageUpload from '../components/ImageUpload/DragDropImageUpload';
+import BulkUploadModal from '../components/BulkUpload/BulkUploadModal';
 import type { Product } from '../types';
 
 interface ProductManagementPageProps {
@@ -681,6 +682,12 @@ const ProductManagementPage: React.FC<ProductManagementPageProps> = ({ onBack })
         </div>
       </div>
 
+      {/* Bulk Upload Modal */}
+      <BulkUploadModal 
+        isOpen={showBulkUpload} 
+        onClose={() => setShowBulkUpload(false)} 
+      />
+
       {/* Delete Confirmation Modal */}
       <AnimatePresence>
         {showDeleteConfirm && (
@@ -1033,57 +1040,6 @@ const ProductManagementPage: React.FC<ProductManagementPageProps> = ({ onBack })
                   </button>
                 </div>
               </form>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Bulk Upload Modal */}
-      <AnimatePresence>
-        {showBulkUpload && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4"
-            onClick={() => setShowBulkUpload(false)}
-          >
-            <motion.div
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
-              className="bg-white rounded-2xl p-8 max-w-2xl w-full"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className="flex items-center justify-between mb-6">
-                <h3 className="text-2xl font-bold text-gray-900">Bulk Product Upload</h3>
-                <button
-                  onClick={() => setShowBulkUpload(false)}
-                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                >
-                  <X className="h-6 w-6" />
-                </button>
-              </div>
-
-              <div className="text-center py-12">
-                <Upload className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-                <h4 className="text-xl font-semibold text-gray-900 mb-2">Bulk Upload Feature</h4>
-                <p className="text-gray-600 mb-6">
-                  Upload multiple products at once using CSV or Excel files. This feature will be available soon.
-                </p>
-                <div className="space-y-4">
-                  <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
-                    <h5 className="font-semibold text-blue-800 mb-2">Coming Soon Features:</h5>
-                    <ul className="text-blue-700 text-sm space-y-1">
-                      <li>• CSV/Excel file upload</li>
-                      <li>• Template download</li>
-                      <li>• Bulk image upload</li>
-                      <li>• Data validation</li>
-                      <li>• Progress tracking</li>
-                    </ul>
-                  </div>
-                </div>
-              </div>
             </motion.div>
           </motion.div>
         )}
