@@ -1,8 +1,35 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, Plus, Edit, Trash2, Save, X, FolderTree, Package, Upload, Image as ImageIcon, ToggleLeft as Toggle, Check, ChevronRight, ChevronDown, Search, Filter, Grid, List, Eye, Copy, Move, Settings, Tag, Layers, FileText, Camera, Shirt, Baby, ToggleLeft, ToggleRight } from 'lucide-react';
+import { 
+  ArrowLeft, 
+  Plus, 
+  Edit, 
+  Trash2, 
+  Save, 
+  X, 
+  Package, 
+  Tag, 
+  Image as ImageIcon,
+  Palette,
+  Ruler,
+  ToggleLeft,
+  ToggleRight,
+  Search,
+  Filter,
+  Grid,
+  List,
+  Star,
+  Eye,
+  Copy,
+  Upload,
+  FolderTree,
+  Baby,
+  Shirt,
+  Check
+} from 'lucide-react';
 import { useStore } from '../store/useStore';
-import type { Category, Product } from '../types';
+import DragDropImageUpload from '../components/ImageUpload/DragDropImageUpload';
+import type { Product, Category } from '../types';
 
 interface ProductManagementPageProps {
   onBack: () => void;
@@ -10,44 +37,41 @@ interface ProductManagementPageProps {
 
 const ProductManagementPage: React.FC<ProductManagementPageProps> = ({ onBack }) => {
   const { 
-    categories, 
     products, 
-    addCategory, 
-    updateCategory, 
-    deleteCategory,
-    setProducts
+    categories, 
+    setProducts,
+    addCategory,
+    updateCategory,
+    deleteCategory
   } = useStore();
 
-  const [activeTab, setActiveTab] = useState<'categories' | 'products'>('categories');
-  const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
-  const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
-  const [showCategoryForm, setShowCategoryForm] = useState(false);
+  const [activeTab, setActiveTab] = useState('products');
   const [showProductForm, setShowProductForm] = useState(false);
-  const [editingCategory, setEditingCategory] = useState<Category | null>(null);
+  const [showCategoryForm, setShowCategoryForm] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  const [editingCategory, setEditingCategory] = useState<Category | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
-
-  const [categoryForm, setCategoryForm] = useState({
-    name: '',
-    description: '',
-    autoDescription: '',
-    icon: '',
-    color: '#8B5CF6',
-    parentId: '',
-    level: 0
-  });
 
   const [productForm, setProductForm] = useState({
     name: '',
-    categoryId: '',
+    price: '',
+    originalPrice: '',
+    category: '',
+    subcategory: '',
+    subSubcategory: '',
     images: [] as string[],
-    price: 0,
-    originalPrice: 0,
+    description: '',
     sizes: [] as string[],
     colors: [] as string[],
     inStock: true,
     featured: false,
+    tags: '',
+    sku: '',
+    stockQuantity: '',
+    lowStockThreshold: '',
+    // Stitched dress specific fields
     isStitchedDress: false,
     availableSizes: {
       S: false,
@@ -56,168 +80,90 @@ const ProductManagementPage: React.FC<ProductManagementPageProps> = ({ onBack })
       XL: false,
       XXL: false
     },
-    supportsFeedingFriendly: false,
-    feedingType: 'non-feeding' as 'feeding' | 'non-feeding',
-    stockQuantity: 0,
-    tags: [] as string[]
+    supportsFeedingFriendly: false
   });
 
-  const [imageUpload, setImageUpload] = useState<string>('');
+  const [categoryForm, setCategoryForm] = useState({
+    name: '',
+    slug: '',
+    description: '',
+    autoDescription: '',
+    image: '',
+    icon: '',
+    color: '#8B5CF6',
+    parentId: '',
+    level: 0,
+    isActive: true
+  });
 
-  // Get hierarchical categories
+  // Get hierarchical categories for display
   const getHierarchicalCategories = () => {
-    const categoryMap = new Map<string, Category & { children: Category[] }>();
-    
-    // Initialize all categories
-    categories.forEach(cat => {
-      categoryMap.set(cat.id, { ...cat, children: [] });
-    });
+    const mainCategories = categories.filter(cat => cat.level === 0);
+    return mainCategories.map(mainCat => ({
+      ...mainCat,
+      subcategories: categories.filter(cat => cat.parentId === mainCat.id && cat.level === 1).map(subCat => ({
+        ...subCat,
+        subSubcategories: categories.filter(cat => cat.parentId === subCat.id && cat.level === 2)
+      }))
+    }));
+  };
 
-    // Build hierarchy
-    const rootCategories: (Category & { children: Category[] })[] = [];
-    categories.forEach(cat => {
-      const categoryWithChildren = categoryMap.get(cat.id)!;
-      if (cat.parentId) {
-        const parent = categoryMap.get(cat.parentId);
-        if (parent) {
-          parent.children.push(categoryWithChildren);
-        }
-      } else {
-        rootCategories.push(categoryWithChildren);
+  // Get category path for display
+  const getCategoryPath = (categoryId: string): string => {
+    const category = categories.find(cat => cat.id === categoryId);
+    if (!category) return '';
+
+    if (category.level === 0) return category.name;
+    if (category.level === 1) {
+      const parent = categories.find(cat => cat.id === category.parentId);
+      return `${parent?.name || ''} > ${category.name}`;
+    }
+    if (category.level === 2) {
+      const parent = categories.find(cat => cat.id === category.parentId);
+      const grandParent = parent ? categories.find(cat => cat.id === parent.parentId) : null;
+      return `${grandParent?.name || ''} > ${parent?.name || ''} > ${category.name}`;
+    }
+    return category.name;
+  };
+
+  // Auto-fill description based on selected subcategory
+  useEffect(() => {
+    if (productForm.subSubcategory) {
+      const category = categories.find(cat => cat.id === productForm.subSubcategory);
+      if (category?.autoDescription) {
+        setProductForm(prev => ({ ...prev, description: category.autoDescription }));
       }
-    });
-
-    return rootCategories.sort((a, b) => a.sortOrder - b.sortOrder);
-  };
-
-  const toggleCategoryExpansion = (categoryId: string) => {
-    const newExpanded = new Set(expandedCategories);
-    if (newExpanded.has(categoryId)) {
-      newExpanded.delete(categoryId);
-    } else {
-      newExpanded.add(categoryId);
+    } else if (productForm.subcategory) {
+      const category = categories.find(cat => cat.id === productForm.subcategory);
+      if (category?.autoDescription) {
+        setProductForm(prev => ({ ...prev, description: category.autoDescription }));
+      }
+    } else if (productForm.category) {
+      const category = categories.find(cat => cat.id === productForm.category);
+      if (category?.autoDescription) {
+        setProductForm(prev => ({ ...prev, description: category.autoDescription }));
+      }
     }
-    setExpandedCategories(newExpanded);
-  };
-
-  const handleCategorySubmit = () => {
-    if (!categoryForm.name.trim()) return;
-
-    const categoryData: Category = {
-      id: editingCategory?.id || `cat_${Date.now()}`,
-      name: categoryForm.name,
-      slug: categoryForm.name.toLowerCase().replace(/\s+/g, '-'),
-      image: 'https://images.pexels.com/photos/8193085/pexels-photo-8193085.jpeg',
-      description: categoryForm.description,
-      autoDescription: categoryForm.autoDescription,
-      productCount: 0,
-      isActive: true,
-      createdAt: editingCategory?.createdAt || new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-      icon: categoryForm.icon,
-      color: categoryForm.color,
-      sortOrder: editingCategory?.sortOrder || categories.length + 1,
-      parentId: categoryForm.parentId || undefined,
-      level: categoryForm.level
-    };
-
-    if (editingCategory) {
-      updateCategory(editingCategory.id, categoryData);
-    } else {
-      addCategory(categoryData);
-    }
-
-    resetCategoryForm();
-  };
-
-  const resetCategoryForm = () => {
-    setCategoryForm({
-      name: '',
-      description: '',
-      autoDescription: '',
-      icon: '',
-      color: '#8B5CF6',
-      parentId: '',
-      level: 0
-    });
-    setEditingCategory(null);
-    setShowCategoryForm(false);
-  };
-
-  const handleEditCategory = (category: Category) => {
-    setCategoryForm({
-      name: category.name,
-      description: category.description,
-      autoDescription: category.autoDescription || '',
-      icon: category.icon || '',
-      color: category.color || '#8B5CF6',
-      parentId: category.parentId || '',
-      level: category.level
-    });
-    setEditingCategory(category);
-    setShowCategoryForm(true);
-  };
-
-  const handleDeleteCategory = (categoryId: string) => {
-    if (window.confirm('Are you sure you want to delete this category? This action cannot be undone.')) {
-      deleteCategory(categoryId);
-    }
-  };
-
-  const handleProductSubmit = () => {
-    if (!productForm.name.trim() || !productForm.categoryId) return;
-
-    const selectedCat = categories.find(cat => cat.id === productForm.categoryId);
-    const productData: Product = {
-      id: editingProduct?.id || `prod_${Date.now()}`,
-      name: productForm.name,
-      price: productForm.price,
-      originalPrice: productForm.originalPrice || undefined,
-      category: selectedCat?.name || '',
-      images: productForm.images,
-      description: selectedCat?.autoDescription || productForm.name,
-      sizes: productForm.isStitchedDress 
-        ? Object.entries(productForm.availableSizes)
-            .filter(([_, available]) => available)
-            .map(([size, _]) => size)
-        : productForm.sizes,
-      colors: productForm.colors,
-      inStock: productForm.inStock,
-      featured: productForm.featured,
-      rating: 4.5,
-      reviewCount: 0,
-      tags: [...productForm.tags, productForm.feedingType],
-      isStitchedDress: productForm.isStitchedDress,
-      availableSizes: productForm.isStitchedDress ? productForm.availableSizes : undefined,
-      supportsFeedingFriendly: productForm.feedingType === 'feeding',
-      stockQuantity: productForm.stockQuantity,
-      createdAt: editingProduct?.createdAt || new Date().toISOString(),
-      updatedAt: new Date().toISOString()
-    };
-
-    if (editingProduct) {
-      const updatedProducts = products.map(p => 
-        p.id === editingProduct.id ? productData : p
-      );
-      setProducts(updatedProducts);
-    } else {
-      setProducts([...products, productData]);
-    }
-
-    resetProductForm();
-  };
+  }, [productForm.category, productForm.subcategory, productForm.subSubcategory, categories]);
 
   const resetProductForm = () => {
     setProductForm({
       name: '',
-      categoryId: '',
+      price: '',
+      originalPrice: '',
+      category: '',
+      subcategory: '',
+      subSubcategory: '',
       images: [],
-      price: 0,
-      originalPrice: 0,
+      description: '',
       sizes: [],
       colors: [],
       inStock: true,
       featured: false,
+      tags: '',
+      sku: '',
+      stockQuantity: '',
+      lowStockThreshold: '',
       isStitchedDress: false,
       availableSizes: {
         S: false,
@@ -226,27 +172,158 @@ const ProductManagementPage: React.FC<ProductManagementPageProps> = ({ onBack })
         XL: false,
         XXL: false
       },
-      supportsFeedingFriendly: false,
-      feedingType: 'non-feeding',
-      stockQuantity: 0,
-      tags: []
+      supportsFeedingFriendly: false
     });
     setEditingProduct(null);
+  };
+
+  const resetCategoryForm = () => {
+    setCategoryForm({
+      name: '',
+      slug: '',
+      description: '',
+      autoDescription: '',
+      image: '',
+      icon: '',
+      color: '#8B5CF6',
+      parentId: '',
+      level: 0,
+      isActive: true
+    });
+    setEditingCategory(null);
+  };
+
+  const handleSaveProduct = () => {
+    const now = new Date().toISOString();
+    
+    // Determine final category based on hierarchy
+    let finalCategory = productForm.category;
+    if (productForm.subSubcategory) {
+      finalCategory = productForm.subSubcategory;
+    } else if (productForm.subcategory) {
+      finalCategory = productForm.subcategory;
+    }
+
+    const categoryObj = categories.find(cat => cat.id === finalCategory);
+    
+    // Get available sizes for stitched dresses
+    const availableSizes = productForm.isStitchedDress 
+      ? Object.entries(productForm.availableSizes)
+          .filter(([_, available]) => available)
+          .map(([size, _]) => size)
+      : productForm.sizes;
+
+    const productData: Product = {
+      id: editingProduct?.id || 'prod_' + Date.now(),
+      name: productForm.name,
+      price: parseInt(productForm.price),
+      originalPrice: productForm.originalPrice ? parseInt(productForm.originalPrice) : undefined,
+      category: categoryObj?.name || '',
+      images: productForm.images,
+      description: productForm.description,
+      sizes: availableSizes,
+      colors: productForm.colors,
+      inStock: productForm.inStock,
+      featured: productForm.featured,
+      rating: editingProduct?.rating || 4.5,
+      reviewCount: editingProduct?.reviewCount || 0,
+      tags: productForm.tags.split(',').map(tag => tag.trim()).filter(Boolean),
+      sku: productForm.sku,
+      stockQuantity: productForm.stockQuantity ? parseInt(productForm.stockQuantity) : undefined,
+      lowStockThreshold: productForm.lowStockThreshold ? parseInt(productForm.lowStockThreshold) : undefined,
+      isStitchedDress: productForm.isStitchedDress,
+      availableSizes: productForm.isStitchedDress ? productForm.availableSizes : undefined,
+      supportsFeedingFriendly: productForm.supportsFeedingFriendly,
+      createdAt: editingProduct?.createdAt || now,
+      updatedAt: now
+    };
+
+    if (editingProduct) {
+      // Update existing product
+      const updatedProducts = products.map(p => p.id === editingProduct.id ? productData : p);
+      setProducts(updatedProducts);
+    } else {
+      // Add new product
+      setProducts([...products, productData]);
+    }
+
     setShowProductForm(false);
+    resetProductForm();
+  };
+
+  const handleSaveCategory = () => {
+    const now = new Date().toISOString();
+    
+    const categoryData: Category = {
+      id: editingCategory?.id || 'cat_' + Date.now(),
+      name: categoryForm.name,
+      slug: categoryForm.slug || categoryForm.name.toLowerCase().replace(/\s+/g, '-'),
+      description: categoryForm.description,
+      autoDescription: categoryForm.autoDescription,
+      image: categoryForm.image,
+      icon: categoryForm.icon,
+      color: categoryForm.color,
+      parentId: categoryForm.parentId || undefined,
+      level: categoryForm.level,
+      productCount: editingCategory?.productCount || 0,
+      isActive: categoryForm.isActive,
+      sortOrder: editingCategory?.sortOrder || categories.length + 1,
+      createdAt: editingCategory?.createdAt || now,
+      updatedAt: now
+    };
+
+    if (editingCategory) {
+      updateCategory(editingCategory.id, categoryData);
+    } else {
+      addCategory(categoryData);
+    }
+
+    setShowCategoryForm(false);
+    resetCategoryForm();
   };
 
   const handleEditProduct = (product: Product) => {
-    const feedingType = product.supportsFeedingFriendly ? 'feeding' : 'non-feeding';
+    setEditingProduct(product);
+    
+    // Find category hierarchy
+    const categoryObj = categories.find(cat => cat.name === product.category);
+    let category = '', subcategory = '', subSubcategory = '';
+    
+    if (categoryObj) {
+      if (categoryObj.level === 0) {
+        category = categoryObj.id;
+      } else if (categoryObj.level === 1) {
+        subcategory = categoryObj.id;
+        const parent = categories.find(cat => cat.id === categoryObj.parentId);
+        if (parent) category = parent.id;
+      } else if (categoryObj.level === 2) {
+        subSubcategory = categoryObj.id;
+        const parent = categories.find(cat => cat.id === categoryObj.parentId);
+        if (parent) {
+          subcategory = parent.id;
+          const grandParent = categories.find(cat => cat.id === parent.parentId);
+          if (grandParent) category = grandParent.id;
+        }
+      }
+    }
+
     setProductForm({
       name: product.name,
-      categoryId: categories.find(cat => cat.name === product.category)?.id || '',
+      price: product.price.toString(),
+      originalPrice: product.originalPrice?.toString() || '',
+      category,
+      subcategory,
+      subSubcategory,
       images: product.images,
-      price: product.price,
-      originalPrice: product.originalPrice || 0,
+      description: product.description,
       sizes: product.sizes,
       colors: product.colors,
       inStock: product.inStock,
       featured: product.featured,
+      tags: product.tags.join(', '),
+      sku: product.sku || '',
+      stockQuantity: product.stockQuantity?.toString() || '',
+      lowStockThreshold: product.lowStockThreshold?.toString() || '',
       isStitchedDress: product.isStitchedDress || false,
       availableSizes: product.availableSizes || {
         S: false,
@@ -255,101 +332,1064 @@ const ProductManagementPage: React.FC<ProductManagementPageProps> = ({ onBack })
         XL: false,
         XXL: false
       },
-      supportsFeedingFriendly: product.supportsFeedingFriendly || false,
-      feedingType: feedingType,
-      stockQuantity: product.stockQuantity || 0,
-      tags: product.tags
+      supportsFeedingFriendly: product.supportsFeedingFriendly || false
     });
-    setEditingProduct(product);
     setShowProductForm(true);
   };
 
+  const handleEditCategory = (category: Category) => {
+    setEditingCategory(category);
+    setCategoryForm({
+      name: category.name,
+      slug: category.slug,
+      description: category.description,
+      autoDescription: category.autoDescription || '',
+      image: category.image,
+      icon: category.icon || '',
+      color: category.color || '#8B5CF6',
+      parentId: category.parentId || '',
+      level: category.level,
+      isActive: category.isActive
+    });
+    setShowCategoryForm(true);
+  };
+
   const handleDeleteProduct = (productId: string) => {
-    if (window.confirm('Are you sure you want to delete this product?')) {
+    if (confirm('Are you sure you want to delete this product?')) {
       setProducts(products.filter(p => p.id !== productId));
     }
   };
 
-  const addImageToProduct = () => {
-    if (imageUpload.trim()) {
-      setProductForm({
-        ...productForm,
-        images: [...productForm.images, imageUpload.trim()]
-      });
-      setImageUpload('');
+  const handleDeleteCategory = (categoryId: string) => {
+    if (confirm('Are you sure you want to delete this category? This will also delete all subcategories.')) {
+      deleteCategory(categoryId);
     }
   };
 
-  const removeImageFromProduct = (index: number) => {
-    setProductForm({
-      ...productForm,
-      images: productForm.images.filter((_, i) => i !== index)
-    });
-  };
+  // Filter products
+  const filteredProducts = products.filter(product => {
+    const matchesSearch = product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                         product.description.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesCategory = !selectedCategory || product.category === selectedCategory;
+    return matchesSearch && matchesCategory;
+  });
 
-  const renderCategoryTree = (categories: (Category & { children: Category[] })[], level = 0) => {
-    return categories.map((category) => (
-      <div key={category.id} className="mb-2">
-        <div 
-          className={`flex items-center justify-between p-3 rounded-xl border transition-all hover:shadow-md ${
-            selectedCategory?.id === category.id 
-              ? 'bg-purple-50 border-purple-200' 
-              : 'bg-white border-gray-200 hover:border-gray-300'
-          }`}
-          style={{ marginLeft: `${level * 20}px` }}
-        >
-          <div className="flex items-center space-x-3">
-            {category.children.length > 0 && (
-              <button
-                onClick={() => toggleCategoryExpansion(category.id)}
-                className="p-1 hover:bg-gray-100 rounded"
-              >
-                {expandedCategories.has(category.id) ? (
-                  <ChevronDown className="h-4 w-4" />
-                ) : (
-                  <ChevronRight className="h-4 w-4" />
-                )}
-              </button>
-            )}
-            <div 
-              className="w-8 h-8 rounded-lg flex items-center justify-center text-white"
-              style={{ backgroundColor: category.color }}
-            >
-              <span>{category.icon || '📁'}</span>
-            </div>
+  const tabs = [
+    { id: 'products', label: 'Products', icon: Package, count: products.length },
+    { id: 'categories', label: 'Categories', icon: FolderTree, count: categories.length }
+  ];
+
+  const renderProductForm = () => (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4"
+    >
+      <motion.div
+        initial={{ scale: 0.9, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        exit={{ scale: 0.9, opacity: 0 }}
+        className="bg-white rounded-2xl p-8 max-w-4xl w-full max-h-[90vh] overflow-y-auto"
+      >
+        <div className="flex items-center justify-between mb-6">
+          <h3 className="text-2xl font-bold text-gray-900">
+            {editingProduct ? 'Edit Product' : 'Add New Product'}
+          </h3>
+          <button
+            onClick={() => {
+              setShowProductForm(false);
+              resetProductForm();
+            }}
+            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+          >
+            <X className="h-6 w-6" />
+          </button>
+        </div>
+
+        <div className="space-y-6">
+          {/* Basic Information */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <h4 className="font-semibold text-gray-900">{category.name}</h4>
-              <p className="text-sm text-gray-500">Level {category.level} • {category.productCount} products</p>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Product Name *</label>
+              <input
+                type="text"
+                value={productForm.name}
+                onChange={(e) => setProductForm({ ...productForm, name: e.target.value })}
+                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                placeholder="Enter product name"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">SKU</label>
+              <input
+                type="text"
+                value={productForm.sku}
+                onChange={(e) => setProductForm({ ...productForm, sku: e.target.value })}
+                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                placeholder="Product SKU"
+              />
             </div>
           </div>
-          <div className="flex items-center space-x-2">
-            <button
-              onClick={() => handleEditCategory(category)}
-              className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+
+          {/* Pricing */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Price (₹) *</label>
+              <input
+                type="number"
+                value={productForm.price}
+                onChange={(e) => setProductForm({ ...productForm, price: e.target.value })}
+                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                placeholder="0"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Original Price (₹)</label>
+              <input
+                type="number"
+                value={productForm.originalPrice}
+                onChange={(e) => setProductForm({ ...productForm, originalPrice: e.target.value })}
+                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                placeholder="0"
+              />
+            </div>
+          </div>
+
+          {/* Category Selection */}
+          <div className="space-y-4">
+            <h4 className="font-semibold text-gray-900">Category Selection</h4>
+            
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {/* Main Category */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Main Category *</label>
+                <select
+                  value={productForm.category}
+                  onChange={(e) => setProductForm({ 
+                    ...productForm, 
+                    category: e.target.value,
+                    subcategory: '',
+                    subSubcategory: ''
+                  })}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                >
+                  <option value="">Select main category</option>
+                  {categories.filter(cat => cat.level === 0).map(category => (
+                    <option key={category.id} value={category.id}>{category.name}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Subcategory */}
+              {productForm.category && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Subcategory</label>
+                  <select
+                    value={productForm.subcategory}
+                    onChange={(e) => setProductForm({ 
+                      ...productForm, 
+                      subcategory: e.target.value,
+                      subSubcategory: ''
+                    })}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  >
+                    <option value="">Select subcategory</option>
+                    {categories
+                      .filter(cat => cat.level === 1 && cat.parentId === productForm.category)
+                      .map(category => (
+                        <option key={category.id} value={category.id}>{category.name}</option>
+                      ))}
+                  </select>
+                </div>
+              )}
+
+              {/* Sub-subcategory */}
+              {productForm.subcategory && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Sub-subcategory</label>
+                  <select
+                    value={productForm.subSubcategory}
+                    onChange={(e) => setProductForm({ ...productForm, subSubcategory: e.target.value })}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  >
+                    <option value="">Select sub-subcategory</option>
+                    {categories
+                      .filter(cat => cat.level === 2 && cat.parentId === productForm.subcategory)
+                      .map(category => (
+                        <option key={category.id} value={category.id}>{category.name}</option>
+                      ))}
+                  </select>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Product Images */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-4">Product Images</label>
+            <DragDropImageUpload
+              images={productForm.images}
+              onImagesChange={(images) => setProductForm({ ...productForm, images })}
+              maxImages={10}
+              maxSizePerImage={5}
+            />
+          </div>
+
+          {/* Description */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
+            <textarea
+              value={productForm.description}
+              onChange={(e) => setProductForm({ ...productForm, description: e.target.value })}
+              rows={4}
+              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              placeholder="Product description (auto-filled based on category)"
+            />
+          </div>
+
+          {/* Stitched Dress Options */}
+          <div className="border border-gray-200 rounded-xl p-6">
+            <div className="flex items-center space-x-3 mb-4">
+              <Shirt className="h-5 w-5 text-purple-600" />
+              <h4 className="font-semibold text-gray-900">Stitched Dress Options</h4>
+            </div>
+
+            <div className="space-y-4">
+              {/* Is Stitched Dress Toggle */}
+              <div className="flex items-center justify-between">
+                <span className="font-medium text-gray-700">Is this a stitched dress?</span>
+                <button
+                  onClick={() => setProductForm({ 
+                    ...productForm, 
+                    isStitchedDress: !productForm.isStitchedDress 
+                  })}
+                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                    productForm.isStitchedDress ? 'bg-purple-600' : 'bg-gray-200'
+                  }`}
+                >
+                  <span
+                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                      productForm.isStitchedDress ? 'translate-x-6' : 'translate-x-1'
+                    }`}
+                  />
+                </button>
+              </div>
+
+              {/* Available Sizes for Stitched Dresses */}
+              {productForm.isStitchedDress && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-3">Available Sizes</label>
+                  <div className="grid grid-cols-5 gap-3">
+                    {Object.entries(productForm.availableSizes).map(([size, available]) => (
+                      <label key={size} className="flex items-center space-x-2 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={available}
+                          onChange={(e) => setProductForm({
+                            ...productForm,
+                            availableSizes: {
+                              ...productForm.availableSizes,
+                              [size]: e.target.checked
+                            }
+                          })}
+                          className="rounded border-gray-300 text-purple-600 focus:ring-purple-500"
+                        />
+                        <span className="font-medium text-gray-700">{size}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Feeding Type Selection */}
+              <div className="border border-gray-200 rounded-xl p-4">
+                <div className="flex items-center space-x-2 mb-3">
+                  <Baby className="h-5 w-5 text-pink-600" />
+                  <label className="block text-sm font-medium text-gray-700">Feeding Type</label>
+                </div>
+                <div className="space-y-3">
+                  <label className="flex items-center space-x-3 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="feedingType"
+                      checked={productForm.supportsFeedingFriendly}
+                      onChange={() => setProductForm({ ...productForm, supportsFeedingFriendly: true })}
+                      className="text-pink-600 focus:ring-pink-500"
+                    />
+                    <div>
+                      <span className="font-medium text-gray-900">Feeding Friendly</span>
+                      <p className="text-sm text-gray-600">Suitable for nursing mothers</p>
+                    </div>
+                  </label>
+                  <label className="flex items-center space-x-3 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="feedingType"
+                      checked={!productForm.supportsFeedingFriendly}
+                      onChange={() => setProductForm({ ...productForm, supportsFeedingFriendly: false })}
+                      className="text-gray-600 focus:ring-gray-500"
+                    />
+                    <div>
+                      <span className="font-medium text-gray-900">Non-Feeding</span>
+                      <p className="text-sm text-gray-600">Regular dress design</p>
+                    </div>
+                  </label>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Regular Sizes and Colors (for non-stitched items) */}
+          {!productForm.isStitchedDress && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Sizes (comma separated)</label>
+                <input
+                  type="text"
+                  value={productForm.sizes.join(', ')}
+                  onChange={(e) => setProductForm({ 
+                    ...productForm, 
+                    sizes: e.target.value.split(',').map(s => s.trim()).filter(Boolean)
+                  })}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  placeholder="S, M, L, XL, Free Size"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Colors (comma separated)</label>
+                <input
+                  type="text"
+                  value={productForm.colors.join(', ')}
+                  onChange={(e) => setProductForm({ 
+                    ...productForm, 
+                    colors: e.target.value.split(',').map(c => c.trim()).filter(Boolean)
+                  })}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  placeholder="Red, Blue, Green, Black"
+                />
+              </div>
+            </div>
+          )}
+
+          {/* Stock Management */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Stock Quantity</label>
+              <input
+                type="number"
+                value={productForm.stockQuantity}
+                onChange={(e) => setProductForm({ ...productForm, stockQuantity: e.target.value })}
+                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                placeholder="0"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Low Stock Threshold</label>
+              <input
+                type="number"
+                value={productForm.lowStockThreshold}
+                onChange={(e) => setProductForm({ ...productForm, lowStockThreshold: e.target.value })}
+                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                placeholder="5"
+              />
+            </div>
+          </div>
+
+          {/* Tags */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Tags (comma separated)</label>
+            <input
+              type="text"
+              value={productForm.tags}
+              onChange={(e) => setProductForm({ ...productForm, tags: e.target.value })}
+              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              placeholder="handwoven, traditional, cotton, silk"
+            />
+          </div>
+
+          {/* Toggles */}
+          <div className="flex items-center justify-between space-x-6">
+            <div className="flex items-center space-x-3">
+              <span className="font-medium text-gray-700">In Stock</span>
+              <button
+                onClick={() => setProductForm({ ...productForm, inStock: !productForm.inStock })}
+                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                  productForm.inStock ? 'bg-green-600' : 'bg-gray-200'
+                }`}
+              >
+                <span
+                  className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                    productForm.inStock ? 'translate-x-6' : 'translate-x-1'
+                  }`}
+                />
+              </button>
+            </div>
+
+            <div className="flex items-center space-x-3">
+              <span className="font-medium text-gray-700">Featured</span>
+              <button
+                onClick={() => setProductForm({ ...productForm, featured: !productForm.featured })}
+                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                  productForm.featured ? 'bg-purple-600' : 'bg-gray-200'
+                }`}
+              >
+                <span
+                  className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                    productForm.featured ? 'translate-x-6' : 'translate-x-1'
+                  }`}
+                />
+              </button>
+            </div>
+          </div>
+
+          {/* Action Buttons */}
+          <div className="flex space-x-4 pt-6 border-t">
+            <motion.button
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              onClick={handleSaveProduct}
+              className="flex-1 bg-purple-600 text-white font-semibold py-3 px-6 rounded-xl hover:bg-purple-700 transition-colors flex items-center justify-center space-x-2"
             >
-              <Edit className="h-4 w-4" />
-            </button>
+              <Save className="h-5 w-5" />
+              <span>{editingProduct ? 'Update Product' : 'Save Product'}</span>
+            </motion.button>
             <button
-              onClick={() => handleDeleteCategory(category.id)}
-              className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+              onClick={() => {
+                setShowProductForm(false);
+                resetProductForm();
+              }}
+              className="px-6 py-3 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 transition-colors"
             >
-              <Trash2 className="h-4 w-4" />
+              Cancel
             </button>
           </div>
         </div>
-        
-        {expandedCategories.has(category.id) && category.children.length > 0 && (
-          <div className="mt-2">
-            {renderCategoryTree(category.children, level + 1)}
-          </div>
-        )}
-      </div>
-    ));
-  };
+      </motion.div>
+    </motion.div>
+  );
 
-  const filteredProducts = products.filter(product =>
-    product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    product.category.toLowerCase().includes(searchQuery.toLowerCase())
+  const renderCategoryForm = () => (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4"
+    >
+      <motion.div
+        initial={{ scale: 0.9, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        exit={{ scale: 0.9, opacity: 0 }}
+        className="bg-white rounded-2xl p-8 max-w-2xl w-full max-h-[90vh] overflow-y-auto"
+      >
+        <div className="flex items-center justify-between mb-6">
+          <h3 className="text-2xl font-bold text-gray-900">
+            {editingCategory ? 'Edit Category' : 'Add New Category'}
+          </h3>
+          <button
+            onClick={() => {
+              setShowCategoryForm(false);
+              resetCategoryForm();
+            }}
+            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+          >
+            <X className="h-6 w-6" />
+          </button>
+        </div>
+
+        <div className="space-y-6">
+          {/* Basic Information */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Category Name *</label>
+              <input
+                type="text"
+                value={categoryForm.name}
+                onChange={(e) => setCategoryForm({ ...categoryForm, name: e.target.value })}
+                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                placeholder="Enter category name"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Slug</label>
+              <input
+                type="text"
+                value={categoryForm.slug}
+                onChange={(e) => setCategoryForm({ ...categoryForm, slug: e.target.value })}
+                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                placeholder="category-slug"
+              />
+            </div>
+          </div>
+
+          {/* Parent Category and Level */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Parent Category</label>
+              <select
+                value={categoryForm.parentId}
+                onChange={(e) => {
+                  const parentId = e.target.value;
+                  const parentCategory = categories.find(cat => cat.id === parentId);
+                  setCategoryForm({ 
+                    ...categoryForm, 
+                    parentId,
+                    level: parentCategory ? parentCategory.level + 1 : 0
+                  });
+                }}
+                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              >
+                <option value="">No parent (Main category)</option>
+                {categories
+                  .filter(cat => cat.level < 2) // Only allow up to 2 levels deep
+                  .map(category => (
+                    <option key={category.id} value={category.id}>
+                      {'  '.repeat(category.level)}
+                      {category.name}
+                    </option>
+                  ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Level</label>
+              <input
+                type="text"
+                value={`Level ${categoryForm.level} (${
+                  categoryForm.level === 0 ? 'Main Category' :
+                  categoryForm.level === 1 ? 'Subcategory' :
+                  'Sub-subcategory'
+                })`}
+                disabled
+                className="w-full px-4 py-3 border border-gray-300 rounded-xl bg-gray-50 text-gray-600"
+              />
+            </div>
+          </div>
+
+          {/* Visual Elements */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Icon (Emoji)</label>
+              <input
+                type="text"
+                value={categoryForm.icon}
+                onChange={(e) => setCategoryForm({ ...categoryForm, icon: e.target.value })}
+                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                placeholder="👗"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Color</label>
+              <input
+                type="color"
+                value={categoryForm.color}
+                onChange={(e) => setCategoryForm({ ...categoryForm, color: e.target.value })}
+                className="w-full h-12 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              />
+            </div>
+          </div>
+
+          {/* Image URL */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Image URL</label>
+            <input
+              type="url"
+              value={categoryForm.image}
+              onChange={(e) => setCategoryForm({ ...categoryForm, image: e.target.value })}
+              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              placeholder="https://example.com/image.jpg"
+            />
+          </div>
+
+          {/* Description */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
+            <textarea
+              value={categoryForm.description}
+              onChange={(e) => setCategoryForm({ ...categoryForm, description: e.target.value })}
+              rows={3}
+              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              placeholder="Category description"
+            />
+          </div>
+
+          {/* Auto Description */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Auto Description for Products</label>
+            <textarea
+              value={categoryForm.autoDescription}
+              onChange={(e) => setCategoryForm({ ...categoryForm, autoDescription: e.target.value })}
+              rows={4}
+              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              placeholder="This description will be auto-filled for products in this category"
+            />
+          </div>
+
+          {/* Active Toggle */}
+          <div className="flex items-center justify-between">
+            <span className="font-medium text-gray-700">Active</span>
+            <button
+              onClick={() => setCategoryForm({ ...categoryForm, isActive: !categoryForm.isActive })}
+              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                categoryForm.isActive ? 'bg-green-600' : 'bg-gray-200'
+              }`}
+            >
+              <span
+                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                  categoryForm.isActive ? 'translate-x-6' : 'translate-x-1'
+                }`}
+              />
+            </button>
+          </div>
+
+          {/* Action Buttons */}
+          <div className="flex space-x-4 pt-6 border-t">
+            <motion.button
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              onClick={handleSaveCategory}
+              className="flex-1 bg-purple-600 text-white font-semibold py-3 px-6 rounded-xl hover:bg-purple-700 transition-colors flex items-center justify-center space-x-2"
+            >
+              <Save className="h-5 w-5" />
+              <span>{editingCategory ? 'Update Category' : 'Save Category'}</span>
+            </motion.button>
+            <button
+              onClick={() => {
+                setShowCategoryForm(false);
+                resetCategoryForm();
+              }}
+              className="px-6 py-3 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 transition-colors"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      </motion.div>
+    </motion.div>
+  );
+
+  const renderProductsTab = () => (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h3 className="text-2xl font-bold text-gray-900">Products</h3>
+          <p className="text-gray-600">{filteredProducts.length} products found</p>
+        </div>
+        <motion.button
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+          onClick={() => setShowProductForm(true)}
+          className="flex items-center space-x-2 bg-purple-600 text-white px-6 py-3 rounded-xl hover:bg-purple-700 transition-colors"
+        >
+          <Plus className="h-5 w-5" />
+          <span>Add Product</span>
+        </motion.button>
+      </div>
+
+      {/* Filters */}
+      <div className="flex flex-col sm:flex-row gap-4">
+        <div className="flex-1 relative">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+          <input
+            type="text"
+            placeholder="Search products..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+          />
+        </div>
+        <select
+          value={selectedCategory}
+          onChange={(e) => setSelectedCategory(e.target.value)}
+          className="px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+        >
+          <option value="">All Categories</option>
+          {categories.map(category => (
+            <option key={category.id} value={category.name}>{category.name}</option>
+          ))}
+        </select>
+        <div className="flex items-center bg-gray-100 rounded-xl p-1">
+          <button
+            onClick={() => setViewMode('grid')}
+            className={`p-2 rounded-lg transition-colors ${
+              viewMode === 'grid' ? 'bg-white shadow-sm' : 'hover:bg-gray-200'
+            }`}
+          >
+            <Grid className="h-4 w-4" />
+          </button>
+          <button
+            onClick={() => setViewMode('list')}
+            className={`p-2 rounded-lg transition-colors ${
+              viewMode === 'list' ? 'bg-white shadow-sm' : 'hover:bg-gray-200'
+            }`}
+          >
+            <List className="h-4 w-4" />
+          </button>
+        </div>
+      </div>
+
+      {/* Products Grid/List */}
+      {filteredProducts.length === 0 ? (
+        <div className="text-center py-12">
+          <Package className="h-16 w-16 text-gray-300 mx-auto mb-4" />
+          <h4 className="text-xl font-semibold text-gray-900 mb-2">No products found</h4>
+          <p className="text-gray-600 mb-6">Get started by adding your first product</p>
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={() => setShowProductForm(true)}
+            className="bg-purple-600 text-white px-6 py-3 rounded-xl hover:bg-purple-700 transition-colors"
+          >
+            Add Product
+          </motion.button>
+        </div>
+      ) : (
+        <div className={viewMode === 'grid' 
+          ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6'
+          : 'space-y-4'
+        }>
+          {filteredProducts.map((product) => (
+            <motion.div
+              key={product.id}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className={viewMode === 'grid' 
+                ? 'bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden'
+                : 'bg-white rounded-2xl shadow-lg border border-gray-100 p-6'
+              }
+            >
+              {viewMode === 'grid' ? (
+                <>
+                  <div className="relative">
+                    <img
+                      src={product.images[0] || '/placeholder-image.jpg'}
+                      alt={product.name}
+                      className="w-full h-48 object-cover"
+                    />
+                    <div className="absolute top-3 left-3 flex flex-col space-y-1">
+                      {product.featured && (
+                        <span className="bg-purple-500 text-white text-xs font-bold px-2 py-1 rounded-full">
+                          Featured
+                        </span>
+                      )}
+                      {product.supportsFeedingFriendly && (
+                        <span className="bg-pink-500 text-white text-xs font-bold px-2 py-1 rounded-full flex items-center space-x-1">
+                          <Baby className="h-3 w-3" />
+                          <span>Feeding</span>
+                        </span>
+                      )}
+                      {!product.supportsFeedingFriendly && product.isStitchedDress && (
+                        <span className="bg-gray-500 text-white text-xs font-bold px-2 py-1 rounded-full">
+                          Non-Feeding
+                        </span>
+                      )}
+                    </div>
+                    <div className="absolute top-3 right-3">
+                      <span className={`px-2 py-1 text-xs font-bold rounded-full ${
+                        product.inStock ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                      }`}>
+                        {product.inStock ? 'In Stock' : 'Out of Stock'}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="p-4">
+                    <h4 className="font-semibold text-gray-900 mb-2 line-clamp-2">{product.name}</h4>
+                    <p className="text-sm text-gray-600 mb-3">{getCategoryPath(product.category)}</p>
+                    <div className="flex items-center space-x-2 mb-3">
+                      <span className="text-lg font-bold text-gray-900">
+                        ₹{product.price.toLocaleString()}
+                      </span>
+                      {product.originalPrice && (
+                        <span className="text-sm text-gray-500 line-through">
+                          ₹{product.originalPrice.toLocaleString()}
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-1">
+                        <Star className="h-4 w-4 text-yellow-400 fill-current" />
+                        <span className="text-sm text-gray-600">{product.rating}</span>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <motion.button
+                          whileHover={{ scale: 1.1 }}
+                          whileTap={{ scale: 0.9 }}
+                          onClick={() => handleEditProduct(product)}
+                          className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                        >
+                          <Edit className="h-4 w-4" />
+                        </motion.button>
+                        <motion.button
+                          whileHover={{ scale: 1.1 }}
+                          whileTap={{ scale: 0.9 }}
+                          onClick={() => handleDeleteProduct(product.id)}
+                          className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </motion.button>
+                      </div>
+                    </div>
+                  </div>
+                </>
+              ) : (
+                <div className="flex items-center space-x-6">
+                  <img
+                    src={product.images[0] || '/placeholder-image.jpg'}
+                    alt={product.name}
+                    className="h-20 w-20 object-cover rounded-xl"
+                  />
+                  <div className="flex-1">
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <h4 className="font-semibold text-gray-900 mb-1">{product.name}</h4>
+                        <p className="text-sm text-gray-600 mb-2">{getCategoryPath(product.category)}</p>
+                        <div className="flex items-center space-x-4">
+                          <span className="text-lg font-bold text-gray-900">
+                            ₹{product.price.toLocaleString()}
+                          </span>
+                          <span className={`px-2 py-1 text-xs font-bold rounded-full ${
+                            product.inStock ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                          }`}>
+                            {product.inStock ? 'In Stock' : 'Out of Stock'}
+                          </span>
+                          {product.featured && (
+                            <span className="bg-purple-100 text-purple-800 text-xs font-bold px-2 py-1 rounded-full">
+                              Featured
+                            </span>
+                          )}
+                          {product.supportsFeedingFriendly && (
+                            <span className="bg-pink-100 text-pink-800 text-xs font-bold px-2 py-1 rounded-full flex items-center space-x-1">
+                              <Baby className="h-3 w-3" />
+                              <span>Feeding</span>
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <motion.button
+                          whileHover={{ scale: 1.1 }}
+                          whileTap={{ scale: 0.9 }}
+                          onClick={() => handleEditProduct(product)}
+                          className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                        >
+                          <Edit className="h-4 w-4" />
+                        </motion.button>
+                        <motion.button
+                          whileHover={{ scale: 1.1 }}
+                          whileTap={{ scale: 0.9 }}
+                          onClick={() => handleDeleteProduct(product.id)}
+                          className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </motion.button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </motion.div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+
+  const renderCategoriesTab = () => (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h3 className="text-2xl font-bold text-gray-900">Categories</h3>
+          <p className="text-gray-600">{categories.length} categories</p>
+        </div>
+        <motion.button
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+          onClick={() => setShowCategoryForm(true)}
+          className="flex items-center space-x-2 bg-purple-600 text-white px-6 py-3 rounded-xl hover:bg-purple-700 transition-colors"
+        >
+          <Plus className="h-5 w-5" />
+          <span>Add Category</span>
+        </motion.button>
+      </div>
+
+      {/* Categories Tree */}
+      <div className="space-y-4">
+        {getHierarchicalCategories().map((mainCategory) => (
+          <motion.div
+            key={mainCategory.id}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden"
+          >
+            {/* Main Category */}
+            <div className="p-6 border-b border-gray-100">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-4">
+                  <div 
+                    className="w-12 h-12 rounded-xl flex items-center justify-center text-white font-bold"
+                    style={{ backgroundColor: mainCategory.color }}
+                  >
+                    {mainCategory.icon || mainCategory.name.charAt(0)}
+                  </div>
+                  <div>
+                    <h4 className="text-lg font-bold text-gray-900">{mainCategory.name}</h4>
+                    <p className="text-gray-600">{mainCategory.description}</p>
+                    <div className="flex items-center space-x-4 mt-2">
+                      <span className="text-sm text-gray-500">Level {mainCategory.level}</span>
+                      <span className={`px-2 py-1 text-xs font-bold rounded-full ${
+                        mainCategory.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                      }`}>
+                        {mainCategory.isActive ? 'Active' : 'Inactive'}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <motion.button
+                    whileHover={{ scale: 1.1 }}
+                    whileTap={{ scale: 0.9 }}
+                    onClick={() => handleEditCategory(mainCategory)}
+                    className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                  >
+                    <Edit className="h-4 w-4" />
+                  </motion.button>
+                  <motion.button
+                    whileHover={{ scale: 1.1 }}
+                    whileTap={{ scale: 0.9 }}
+                    onClick={() => handleDeleteCategory(mainCategory.id)}
+                    className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </motion.button>
+                </div>
+              </div>
+            </div>
+
+            {/* Subcategories */}
+            {mainCategory.subcategories && mainCategory.subcategories.length > 0 && (
+              <div className="p-6 space-y-4">
+                {mainCategory.subcategories.map((subCategory) => (
+                  <div key={subCategory.id} className="ml-6">
+                    <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
+                      <div className="flex items-center space-x-3">
+                        <div 
+                          className="w-8 h-8 rounded-lg flex items-center justify-center text-white text-sm font-bold"
+                          style={{ backgroundColor: subCategory.color }}
+                        >
+                          {subCategory.icon || subCategory.name.charAt(0)}
+                        </div>
+                        <div>
+                          <h5 className="font-semibold text-gray-900">{subCategory.name}</h5>
+                          <p className="text-sm text-gray-600">{subCategory.description}</p>
+                          <div className="flex items-center space-x-2 mt-1">
+                            <span className="text-xs text-gray-500">Level {subCategory.level}</span>
+                            <span className={`px-2 py-1 text-xs font-bold rounded-full ${
+                              subCategory.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                            }`}>
+                              {subCategory.isActive ? 'Active' : 'Inactive'}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <motion.button
+                          whileHover={{ scale: 1.1 }}
+                          whileTap={{ scale: 0.9 }}
+                          onClick={() => handleEditCategory(subCategory)}
+                          className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                        >
+                          <Edit className="h-3 w-3" />
+                        </motion.button>
+                        <motion.button
+                          whileHover={{ scale: 1.1 }}
+                          whileTap={{ scale: 0.9 }}
+                          onClick={() => handleDeleteCategory(subCategory.id)}
+                          className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                        >
+                          <Trash2 className="h-3 w-3" />
+                        </motion.button>
+                      </div>
+                    </div>
+
+                    {/* Sub-subcategories */}
+                    {subCategory.subSubcategories && subCategory.subSubcategories.length > 0 && (
+                      <div className="ml-6 mt-3 space-y-2">
+                        {subCategory.subSubcategories.map((subSubCategory) => (
+                          <div key={subSubCategory.id} className="flex items-center justify-between p-3 bg-gray-100 rounded-lg">
+                            <div className="flex items-center space-x-3">
+                              <div 
+                                className="w-6 h-6 rounded flex items-center justify-center text-white text-xs font-bold"
+                                style={{ backgroundColor: subSubCategory.color }}
+                              >
+                                {subSubCategory.icon || subSubCategory.name.charAt(0)}
+                              </div>
+                              <div>
+                                <h6 className="font-medium text-gray-900">{subSubCategory.name}</h6>
+                                <p className="text-xs text-gray-600">{subSubCategory.description}</p>
+                                <div className="flex items-center space-x-2 mt-1">
+                                  <span className="text-xs text-gray-500">Level {subSubCategory.level}</span>
+                                  <span className={`px-1 py-0.5 text-xs font-bold rounded ${
+                                    subSubCategory.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                                  }`}>
+                                    {subSubCategory.isActive ? 'Active' : 'Inactive'}
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+                            <div className="flex items-center space-x-1">
+                              <motion.button
+                                whileHover={{ scale: 1.1 }}
+                                whileTap={{ scale: 0.9 }}
+                                onClick={() => handleEditCategory(subSubCategory)}
+                                className="p-1 text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                              >
+                                <Edit className="h-3 w-3" />
+                              </motion.button>
+                              <motion.button
+                                whileHover={{ scale: 1.1 }}
+                                whileTap={{ scale: 0.9 }}
+                                onClick={() => handleDeleteCategory(subSubCategory.id)}
+                                className="p-1 text-red-600 hover:bg-red-50 rounded transition-colors"
+                              >
+                                <Trash2 className="h-3 w-3" />
+                              </motion.button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </motion.div>
+        ))}
+      </div>
+
+      {categories.length === 0 && (
+        <div className="text-center py-12">
+          <FolderTree className="h-16 w-16 text-gray-300 mx-auto mb-4" />
+          <h4 className="text-xl font-semibold text-gray-900 mb-2">No categories found</h4>
+          <p className="text-gray-600 mb-6">Create your first category to organize products</p>
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={() => setShowCategoryForm(true)}
+            className="bg-purple-600 text-white px-6 py-3 rounded-xl hover:bg-purple-700 transition-colors"
+          >
+            Add Category
+          </motion.button>
+        </div>
+      )}
+    </div>
   );
 
   return (
@@ -369,33 +1409,7 @@ const ProductManagementPage: React.FC<ProductManagementPageProps> = ({ onBack })
               </motion.button>
               <div>
                 <h1 className="text-2xl font-bold text-gray-900">Product Management</h1>
-                <p className="text-sm text-gray-500">Manage categories and products</p>
-              </div>
-            </div>
-            <div className="flex items-center space-x-4">
-              <div className="flex bg-gray-100 rounded-xl p-1">
-                <button
-                  onClick={() => setActiveTab('categories')}
-                  className={`px-4 py-2 rounded-lg font-medium transition-all ${
-                    activeTab === 'categories'
-                      ? 'bg-white text-purple-600 shadow-sm'
-                      : 'text-gray-600 hover:text-gray-900'
-                  }`}
-                >
-                  <FolderTree className="h-4 w-4 inline mr-2" />
-                  Categories
-                </button>
-                <button
-                  onClick={() => setActiveTab('products')}
-                  className={`px-4 py-2 rounded-lg font-medium transition-all ${
-                    activeTab === 'products'
-                      ? 'bg-white text-purple-600 shadow-sm'
-                      : 'text-gray-600 hover:text-gray-900'
-                  }`}
-                >
-                  <Package className="h-4 w-4 inline mr-2" />
-                  Products
-                </button>
+                <p className="text-sm text-gray-500">Manage your products and categories</p>
               </div>
             </div>
           </div>
@@ -403,743 +1417,49 @@ const ProductManagementPage: React.FC<ProductManagementPageProps> = ({ onBack })
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Tabs */}
+        <div className="border-b border-gray-200 mb-8">
+          <nav className="flex space-x-8">
+            {tabs.map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`flex items-center space-x-2 py-4 px-2 border-b-2 font-medium text-sm transition-colors ${
+                  activeTab === tab.id
+                    ? 'border-purple-500 text-purple-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700'
+                }`}
+              >
+                <tab.icon className="h-5 w-5" />
+                <span>{tab.label}</span>
+                {tab.count > 0 && (
+                  <span className="bg-gray-100 text-gray-600 px-2 py-1 text-xs rounded-full">
+                    {tab.count}
+                  </span>
+                )}
+              </button>
+            ))}
+          </nav>
+        </div>
+
+        {/* Tab Content */}
         <AnimatePresence mode="wait">
-          {activeTab === 'categories' && (
-            <motion.div
-              key="categories"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              className="space-y-6"
-            >
-              {/* Categories Header */}
-              <div className="flex items-center justify-between">
-                <div>
-                  <h2 className="text-xl font-bold text-gray-900">Category Management</h2>
-                  <p className="text-gray-600">Organize your products with hierarchical categories</p>
-                </div>
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  onClick={() => setShowCategoryForm(true)}
-                  className="flex items-center space-x-2 bg-purple-600 text-white px-6 py-3 rounded-xl hover:bg-purple-700 transition-colors shadow-lg"
-                >
-                  <Plus className="h-5 w-5" />
-                  <span>Add Category</span>
-                </motion.button>
-              </div>
-
-              {/* Category Tree */}
-              <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6">
-                <div className="space-y-4">
-                  {getHierarchicalCategories().length === 0 ? (
-                    <div className="text-center py-12">
-                      <FolderTree className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-                      <h3 className="text-xl font-semibold text-gray-900 mb-2">No Categories Yet</h3>
-                      <p className="text-gray-600 mb-6">Start by creating your first category</p>
-                      <button
-                        onClick={() => setShowCategoryForm(true)}
-                        className="bg-purple-600 text-white px-6 py-3 rounded-xl hover:bg-purple-700 transition-colors"
-                      >
-                        Create Category
-                      </button>
-                    </div>
-                  ) : (
-                    renderCategoryTree(getHierarchicalCategories())
-                  )}
-                </div>
-              </div>
-            </motion.div>
-          )}
-
-          {activeTab === 'products' && (
-            <motion.div
-              key="products"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              className="space-y-6"
-            >
-              {/* Products Header */}
-              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between space-y-4 sm:space-y-0">
-                <div>
-                  <h2 className="text-xl font-bold text-gray-900">Product Management</h2>
-                  <p className="text-gray-600">{filteredProducts.length} products found</p>
-                </div>
-                <div className="flex items-center space-x-4">
-                  <div className="relative">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                    <input
-                      type="text"
-                      placeholder="Search products..."
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      className="pl-10 pr-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                    />
-                  </div>
-                  <div className="flex bg-gray-100 rounded-xl p-1">
-                    <button
-                      onClick={() => setViewMode('grid')}
-                      className={`p-2 rounded-lg transition-colors ${
-                        viewMode === 'grid' ? 'bg-white shadow-sm' : 'hover:bg-gray-200'
-                      }`}
-                    >
-                      <Grid className="h-4 w-4" />
-                    </button>
-                    <button
-                      onClick={() => setViewMode('list')}
-                      className={`p-2 rounded-lg transition-colors ${
-                        viewMode === 'list' ? 'bg-white shadow-sm' : 'hover:bg-gray-200'
-                      }`}
-                    >
-                      <List className="h-4 w-4" />
-                    </button>
-                  </div>
-                  <motion.button
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    onClick={() => setShowProductForm(true)}
-                    className="flex items-center space-x-2 bg-green-600 text-white px-6 py-3 rounded-xl hover:bg-green-700 transition-colors shadow-lg"
-                  >
-                    <Plus className="h-5 w-5" />
-                    <span>Add Product</span>
-                  </motion.button>
-                </div>
-              </div>
-
-              {/* Products Grid/List */}
-              {filteredProducts.length === 0 ? (
-                <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-12 text-center">
-                  <Package className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-                  <h3 className="text-xl font-semibold text-gray-900 mb-2">No Products Yet</h3>
-                  <p className="text-gray-600 mb-6">Start by adding your first product</p>
-                  <button
-                    onClick={() => setShowProductForm(true)}
-                    className="bg-green-600 text-white px-6 py-3 rounded-xl hover:bg-green-700 transition-colors"
-                  >
-                    Add Product
-                  </button>
-                </div>
-              ) : (
-                <div className={`grid gap-6 ${
-                  viewMode === 'grid' 
-                    ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4' 
-                    : 'grid-cols-1'
-                }`}>
-                  {filteredProducts.map((product) => (
-                    <motion.div
-                      key={product.id}
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      className={`bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden hover:shadow-xl transition-all ${
-                        viewMode === 'list' ? 'flex' : ''
-                      }`}
-                    >
-                      <div className={`relative ${viewMode === 'list' ? 'w-48 h-48' : 'h-48'}`}>
-                        <img
-                          src={product.images[0] || 'https://images.pexels.com/photos/8193085/pexels-photo-8193085.jpeg'}
-                          alt={product.name}
-                          className="w-full h-full object-cover"
-                        />
-                        <div className="absolute top-3 left-3 flex flex-col space-y-1">
-                          {!product.inStock && (
-                            <span className="bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full">
-                              Out of Stock
-                            </span>
-                          )}
-                          {product.featured && (
-                            <span className="bg-yellow-500 text-white text-xs font-bold px-2 py-1 rounded-full">
-                              Featured
-                            </span>
-                          )}
-                          {product.isStitchedDress && (
-                            <span className="bg-blue-500 text-white text-xs font-bold px-2 py-1 rounded-full">
-                              <Shirt className="h-3 w-3 inline mr-1" />
-                              Stitched
-                            </span>
-                          )}
-                          {product.supportsFeedingFriendly && (
-                            <span className="bg-pink-500 text-white text-xs font-bold px-2 py-1 rounded-full">
-                              <Baby className="h-3 w-3 inline mr-1" />
-                              Feeding
-                            </span>
-                          )}
-                          {!product.supportsFeedingFriendly && product.tags?.includes('non-feeding') && (
-                            <span className="bg-gray-500 text-white text-xs font-bold px-2 py-1 rounded-full">
-                              Non-Feeding
-                            </span>
-                          )}
-                        </div>
-                        <div className="absolute top-3 right-3">
-                          <button
-                            onClick={() => {
-                              const updatedProducts = products.map(p =>
-                                p.id === product.id ? { ...p, inStock: !p.inStock } : p
-                              );
-                              setProducts(updatedProducts);
-                            }}
-                            className="p-2 bg-white/90 backdrop-blur-sm rounded-full shadow-lg hover:bg-white transition-colors"
-                          >
-                            {product.inStock ? (
-                              <ToggleRight className="h-5 w-5 text-green-600" />
-                            ) : (
-                              <ToggleLeft className="h-5 w-5 text-gray-400" />
-                            )}
-                          </button>
-                        </div>
-                      </div>
-                      
-                      <div className={`p-4 ${viewMode === 'list' ? 'flex-1' : ''}`}>
-                        <div className="flex items-start justify-between mb-2">
-                          <h3 className="font-bold text-gray-900 line-clamp-2 flex-1">{product.name}</h3>
-                        </div>
-                        
-                        <p className="text-sm text-gray-600 mb-2">{product.category}</p>
-                        
-                        <div className="flex items-center space-x-2 mb-3">
-                          <span className="text-lg font-bold text-gray-900">
-                            ₹{product.price.toLocaleString()}
-                          </span>
-                          {product.originalPrice && (
-                            <span className="text-sm text-gray-500 line-through">
-                              ₹{product.originalPrice.toLocaleString()}
-                            </span>
-                          )}
-                        </div>
-
-                        {product.isStitchedDress && (
-                          <div className="mb-3">
-                            <p className="text-xs text-gray-600 mb-1">Available Sizes:</p>
-                            <div className="flex flex-wrap gap-1">
-                              {Object.entries(product.availableSizes || {}).map(([size, available]) => (
-                                <span
-                                  key={size}
-                                  className={`text-xs px-2 py-1 rounded ${
-                                    available 
-                                      ? 'bg-green-100 text-green-800' 
-                                      : 'bg-gray-100 text-gray-400'
-                                  }`}
-                                >
-                                  {size}
-                                </span>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center space-x-1">
-                            <span className={`w-3 h-3 rounded-full ${
-                              product.inStock ? 'bg-green-500' : 'bg-red-500'
-                            }`} />
-                            <span className="text-xs text-gray-600">
-                              {product.inStock ? 'In Stock' : 'Out of Stock'}
-                            </span>
-                          </div>
-                          <div className="flex items-center space-x-2">
-                            <button
-                              onClick={() => handleEditProduct(product)}
-                              className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                            >
-                              <Edit className="h-4 w-4" />
-                            </button>
-                            <button
-                              onClick={() => handleDeleteProduct(product.id)}
-                              className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    </motion.div>
-                  ))}
-                </div>
-              )}
-            </motion.div>
-          )}
+          <motion.div
+            key={activeTab}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            transition={{ duration: 0.3 }}
+          >
+            {activeTab === 'products' && renderProductsTab()}
+            {activeTab === 'categories' && renderCategoriesTab()}
+          </motion.div>
         </AnimatePresence>
 
-        {/* Category Form Modal */}
+        {/* Forms */}
         <AnimatePresence>
-          {showCategoryForm && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4"
-              onClick={() => resetCategoryForm()}
-            >
-              <motion.div
-                initial={{ scale: 0.9, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                exit={{ scale: 0.9, opacity: 0 }}
-                className="bg-white rounded-2xl p-8 max-w-2xl w-full max-h-[90vh] overflow-y-auto"
-                onClick={(e) => e.stopPropagation()}
-              >
-                <div className="flex items-center justify-between mb-6">
-                  <h3 className="text-2xl font-bold text-gray-900">
-                    {editingCategory ? 'Edit Category' : 'Add New Category'}
-                  </h3>
-                  <button
-                    onClick={resetCategoryForm}
-                    className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                  >
-                    <X className="h-6 w-6" />
-                  </button>
-                </div>
-
-                <div className="space-y-6">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Category Name *
-                      </label>
-                      <input
-                        type="text"
-                        value={categoryForm.name}
-                        onChange={(e) => setCategoryForm({ ...categoryForm, name: e.target.value })}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                        placeholder="Enter category name"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Parent Category
-                      </label>
-                      <select
-                        value={categoryForm.parentId}
-                        onChange={(e) => {
-                          const parentId = e.target.value;
-                          const parent = categories.find(cat => cat.id === parentId);
-                          setCategoryForm({ 
-                            ...categoryForm, 
-                            parentId,
-                            level: parent ? parent.level + 1 : 0
-                          });
-                        }}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                      >
-                        <option value="">No Parent (Main Category)</option>
-                        {categories.filter(cat => cat.level < 2).map(cat => (
-                          <option key={cat.id} value={cat.id}>
-                            {'  '.repeat(cat.level)}
-                            {cat.name}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Icon (Emoji)
-                      </label>
-                      <input
-                        type="text"
-                        value={categoryForm.icon}
-                        onChange={(e) => setCategoryForm({ ...categoryForm, icon: e.target.value })}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                        placeholder="📁"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Color
-                      </label>
-                      <input
-                        type="color"
-                        value={categoryForm.color}
-                        onChange={(e) => setCategoryForm({ ...categoryForm, color: e.target.value })}
-                        className="w-full h-12 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Description
-                    </label>
-                    <textarea
-                      value={categoryForm.description}
-                      onChange={(e) => setCategoryForm({ ...categoryForm, description: e.target.value })}
-                      rows={3}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                      placeholder="Brief description of this category"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Auto-Description for Products
-                    </label>
-                    <textarea
-                      value={categoryForm.autoDescription}
-                      onChange={(e) => setCategoryForm({ ...categoryForm, autoDescription: e.target.value })}
-                      rows={4}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                      placeholder="This description will be automatically applied to all products in this category"
-                    />
-                    <p className="text-sm text-gray-500 mt-1">
-                      This description will be automatically used for all products added to this category.
-                    </p>
-                  </div>
-
-                  <div className="flex space-x-4 pt-4">
-                    <motion.button
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
-                      onClick={handleCategorySubmit}
-                      className="flex-1 bg-purple-600 text-white font-bold py-3 px-6 rounded-xl hover:bg-purple-700 transition-colors"
-                    >
-                      <Save className="h-5 w-5 inline mr-2" />
-                      {editingCategory ? 'Update Category' : 'Create Category'}
-                    </motion.button>
-                    <button
-                      onClick={resetCategoryForm}
-                      className="px-6 py-3 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 transition-colors"
-                    >
-                      Cancel
-                    </button>
-                  </div>
-                </div>
-              </motion.div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        {/* Product Form Modal */}
-        <AnimatePresence>
-          {showProductForm && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4"
-              onClick={() => resetProductForm()}
-            >
-              <motion.div
-                initial={{ scale: 0.9, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                exit={{ scale: 0.9, opacity: 0 }}
-                className="bg-white rounded-2xl p-8 max-w-4xl w-full max-h-[90vh] overflow-y-auto"
-                onClick={(e) => e.stopPropagation()}
-              >
-                <div className="flex items-center justify-between mb-6">
-                  <h3 className="text-2xl font-bold text-gray-900">
-                    {editingProduct ? 'Edit Product' : 'Add New Product'}
-                  </h3>
-                  <button
-                    onClick={resetProductForm}
-                    className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                  >
-                    <X className="h-6 w-6" />
-                  </button>
-                </div>
-
-                <div className="space-y-6">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Product Name *
-                      </label>
-                      <input
-                        type="text"
-                        value={productForm.name}
-                        onChange={(e) => setProductForm({ ...productForm, name: e.target.value })}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                        placeholder="Enter product name"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Category *
-                      </label>
-                      <select
-                        value={productForm.categoryId}
-                        onChange={(e) => setProductForm({ ...productForm, categoryId: e.target.value })}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                      >
-                        <option value="">Select Category</option>
-                        {categories.map(cat => (
-                          <option key={cat.id} value={cat.id}>
-                            {'  '.repeat(cat.level)}
-                            {cat.name}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Price *
-                      </label>
-                      <input
-                        type="number"
-                        value={productForm.price}
-                        onChange={(e) => setProductForm({ ...productForm, price: Number(e.target.value) })}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                        placeholder="0"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Original Price (Optional)
-                      </label>
-                      <input
-                        type="number"
-                        value={productForm.originalPrice}
-                        onChange={(e) => setProductForm({ ...productForm, originalPrice: Number(e.target.value) })}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                        placeholder="0"
-                      />
-                    </div>
-                  </div>
-
-                  {/* Product Images */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Product Images
-                    </label>
-                    <div className="space-y-4">
-                      <div className="flex space-x-2">
-                        <input
-                          type="url"
-                          value={imageUpload}
-                          onChange={(e) => setImageUpload(e.target.value)}
-                          className="flex-1 px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                          placeholder="Enter image URL"
-                        />
-                        <button
-                          onClick={addImageToProduct}
-                          className="bg-blue-600 text-white px-6 py-3 rounded-xl hover:bg-blue-700 transition-colors"
-                        >
-                          <Plus className="h-5 w-5" />
-                        </button>
-                      </div>
-                      
-                      {productForm.images.length > 0 && (
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                          {productForm.images.map((image, index) => (
-                            <div key={index} className="relative group">
-                              <img
-                                src={image}
-                                alt={`Product ${index + 1}`}
-                                className="w-full h-24 object-cover rounded-lg"
-                              />
-                              <button
-                                onClick={() => removeImageFromProduct(index)}
-                                className="absolute top-1 right-1 bg-red-500 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
-                              >
-                                <X className="h-3 w-3" />
-                              </button>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Stitched Dress Options */}
-                  <div className="border border-gray-200 rounded-xl p-6">
-                    <div className="flex items-center space-x-3 mb-4">
-                      <input
-                        type="checkbox"
-                        id="isStitchedDress"
-                        checked={productForm.isStitchedDress}
-                        onChange={(e) => setProductForm({ ...productForm, isStitchedDress: e.target.checked })}
-                        className="w-5 h-5 text-purple-600 rounded focus:ring-purple-500"
-                      />
-                      <label htmlFor="isStitchedDress" className="font-medium text-gray-900">
-                        <Shirt className="h-5 w-5 inline mr-2" />
-                        This is a Stitched Dress
-                      </label>
-                    </div>
-
-                    {productForm.isStitchedDress && (
-                      <div className="space-y-4">
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-3">
-                            Available Sizes
-                          </label>
-                          <div className="grid grid-cols-5 gap-3">
-                            {Object.entries(productForm.availableSizes).map(([size, available]) => (
-                              <label key={size} className="flex items-center space-x-2">
-                                <input
-                                  type="checkbox"
-                                  checked={available}
-                                  onChange={(e) => setProductForm({
-                                    ...productForm,
-                                    availableSizes: {
-                                      ...productForm.availableSizes,
-                                      [size]: e.target.checked
-                                    }
-                                  })}
-                                  className="w-4 h-4 text-purple-600 rounded focus:ring-purple-500"
-                                />
-                                <span className="text-sm font-medium">{size}</span>
-                              </label>
-                            ))}
-                          </div>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Feeding Type Selection */}
-                  <div className="border border-gray-200 rounded-xl p-6">
-                    <label className="block text-sm font-medium text-gray-700 mb-3">
-                      <Baby className="h-5 w-5 inline mr-2" />
-                      Feeding Type
-                    </label>
-                    <div className="grid grid-cols-2 gap-4">
-                      <label className="flex items-center space-x-3 p-4 border border-gray-300 rounded-xl cursor-pointer hover:bg-gray-50 transition-colors">
-                        <input
-                          type="radio"
-                          name="feedingType"
-                          value="feeding"
-                          checked={productForm.feedingType === 'feeding'}
-                          onChange={(e) => setProductForm({ 
-                            ...productForm, 
-                            feedingType: e.target.value as 'feeding' | 'non-feeding',
-                            supportsFeedingFriendly: e.target.value === 'feeding'
-                          })}
-                          className="w-4 h-4 text-pink-600 focus:ring-pink-500"
-                        />
-                        <div>
-                          <span className="font-medium text-gray-900">Feeding Friendly</span>
-                          <p className="text-sm text-gray-600">Suitable for nursing mothers</p>
-                        </div>
-                      </label>
-                      
-                      <label className="flex items-center space-x-3 p-4 border border-gray-300 rounded-xl cursor-pointer hover:bg-gray-50 transition-colors">
-                        <input
-                          type="radio"
-                          name="feedingType"
-                          value="non-feeding"
-                          checked={productForm.feedingType === 'non-feeding'}
-                          onChange={(e) => setProductForm({ 
-                            ...productForm, 
-                            feedingType: e.target.value as 'feeding' | 'non-feeding',
-                            supportsFeedingFriendly: e.target.value === 'feeding'
-                          })}
-                          className="w-4 h-4 text-gray-600 focus:ring-gray-500"
-                        />
-                        <div>
-                          <span className="font-medium text-gray-900">Non-Feeding</span>
-                          <p className="text-sm text-gray-600">Regular dress design</p>
-                        </div>
-                      </label>
-                    </div>
-                  </div>
-
-                  {/* Regular Product Options */}
-                  {!productForm.isStitchedDress && (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Sizes (comma separated)
-                        </label>
-                        <input
-                          type="text"
-                          value={productForm.sizes.join(', ')}
-                          onChange={(e) => setProductForm({ 
-                            ...productForm, 
-                            sizes: e.target.value.split(',').map(s => s.trim()).filter(s => s)
-                          })}
-                          className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                          placeholder="S, M, L, XL"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Colors (comma separated)
-                        </label>
-                        <input
-                          type="text"
-                          value={productForm.colors.join(', ')}
-                          onChange={(e) => setProductForm({ 
-                            ...productForm, 
-                            colors: e.target.value.split(',').map(s => s.trim()).filter(s => s)
-                          })}
-                          className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                          placeholder="Red, Blue, Green"
-                        />
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Product Options */}
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <div className="flex items-center space-x-3">
-                      <input
-                        type="checkbox"
-                        id="inStock"
-                        checked={productForm.inStock}
-                        onChange={(e) => setProductForm({ ...productForm, inStock: e.target.checked })}
-                        className="w-5 h-5 text-green-600 rounded focus:ring-green-500"
-                      />
-                      <label htmlFor="inStock" className="font-medium text-gray-900">
-                        In Stock
-                      </label>
-                    </div>
-
-                    <div className="flex items-center space-x-3">
-                      <input
-                        type="checkbox"
-                        id="featured"
-                        checked={productForm.featured}
-                        onChange={(e) => setProductForm({ ...productForm, featured: e.target.checked })}
-                        className="w-5 h-5 text-yellow-600 rounded focus:ring-yellow-500"
-                      />
-                      <label htmlFor="featured" className="font-medium text-gray-900">
-                        Featured Product
-                      </label>
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Stock Quantity
-                      </label>
-                      <input
-                        type="number"
-                        value={productForm.stockQuantity}
-                        onChange={(e) => setProductForm({ ...productForm, stockQuantity: Number(e.target.value) })}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                        placeholder="0"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="flex space-x-4 pt-4">
-                    <motion.button
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
-                      onClick={handleProductSubmit}
-                      className="flex-1 bg-green-600 text-white font-bold py-3 px-6 rounded-xl hover:bg-green-700 transition-colors"
-                    >
-                      <Save className="h-5 w-5 inline mr-2" />
-                      {editingProduct ? 'Update Product' : 'Create Product'}
-                    </motion.button>
-                    <button
-                      onClick={resetProductForm}
-                      className="px-6 py-3 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 transition-colors"
-                    >
-                      Cancel
-                    </button>
-                  </div>
-                </div>
-              </motion.div>
-            </motion.div>
-          )}
+          {showProductForm && renderProductForm()}
+          {showCategoryForm && renderCategoryForm()}
         </AnimatePresence>
       </div>
     </div>
