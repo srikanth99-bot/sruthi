@@ -39,9 +39,12 @@ import {
   ArrowDownRight,
   TrendingDown,
   Copy,
-  ExternalLink
+  ExternalLink,
+  FolderTree,
+  Boxes
 } from 'lucide-react';
 import { useStore } from '../store/useStore';
+import ProductManagementPage from './ProductManagementPage';
 import type { Order, Product, RazorpayPayment } from '../types';
 
 interface AdminDashboardProps {
@@ -175,6 +178,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
     { id: 'orders', label: 'Orders', icon: ShoppingCart, badge: orders.length },
     { id: 'payments', label: 'Payments', icon: CreditCard, badge: payments.length },
     { id: 'products', label: 'Products', icon: Package, badge: totalProducts },
+    { id: 'product-management', label: 'Product Management', icon: Boxes, badge: categories.length },
     { id: 'categories', label: 'Categories', icon: Layers, badge: categories.length },
     { id: 'themes', label: 'Themes', icon: Globe, badge: themes.length },
     { id: 'stories', label: 'Stories', icon: MessageSquare, badge: stories.length },
@@ -490,167 +494,6 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
           </table>
         </div>
       </div>
-
-      {/* Payment Details Modal */}
-      <AnimatePresence>
-        {showPaymentDetails && selectedPayment && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4"
-            onClick={() => setShowPaymentDetails(false)}
-          >
-            <motion.div
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
-              className="bg-white rounded-2xl p-8 max-w-2xl w-full max-h-[90vh] overflow-y-auto"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className="flex items-center justify-between mb-6">
-                <h3 className="text-2xl font-bold text-gray-900">Payment Details</h3>
-                <button
-                  onClick={() => setShowPaymentDetails(false)}
-                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                >
-                  <X className="h-6 w-6" />
-                </button>
-              </div>
-
-              <div className="space-y-6">
-                {/* Payment Info */}
-                <div className="grid grid-cols-2 gap-6">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Payment ID</label>
-                    <div className="flex items-center space-x-2">
-                      <span className="font-mono text-sm">{selectedPayment.id}</span>
-                      <button
-                        onClick={() => navigator.clipboard.writeText(selectedPayment.id)}
-                        className="p-1 hover:bg-gray-200 rounded"
-                      >
-                        <Copy className="h-3 w-3 text-gray-400" />
-                      </button>
-                    </div>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
-                    <span className={`px-3 py-1 rounded-full text-sm font-semibold ${getPaymentStatusColor(selectedPayment.status)}`}>
-                      {selectedPayment.status.charAt(0).toUpperCase() + selectedPayment.status.slice(1)}
-                    </span>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Amount</label>
-                    <span className="text-lg font-bold">₹{selectedPayment.amount.toLocaleString()}</span>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Method</label>
-                    <span className="capitalize">{selectedPayment.method}</span>
-                  </div>
-                </div>
-
-                {/* Customer Info */}
-                <div>
-                  <h4 className="font-semibold text-gray-900 mb-3">Customer Information</h4>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
-                      <span>{selectedPayment.customerName}</span>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-                      <span>{selectedPayment.customerEmail}</span>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
-                      <span>{selectedPayment.customerPhone}</span>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Order ID</label>
-                      <span>#{selectedPayment.orderId}</span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Razorpay Details */}
-                {selectedPayment.razorpayPaymentId && (
-                  <div>
-                    <h4 className="font-semibold text-gray-900 mb-3">Razorpay Details</h4>
-                    <div className="grid grid-cols-1 gap-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Razorpay Payment ID</label>
-                        <div className="flex items-center space-x-2">
-                          <span className="font-mono text-sm">{selectedPayment.razorpayPaymentId}</span>
-                          <button
-                            onClick={() => navigator.clipboard.writeText(selectedPayment.razorpayPaymentId!)}
-                            className="p-1 hover:bg-gray-200 rounded"
-                          >
-                            <Copy className="h-3 w-3 text-gray-400" />
-                          </button>
-                        </div>
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Razorpay Order ID</label>
-                        <div className="flex items-center space-x-2">
-                          <span className="font-mono text-sm">{selectedPayment.razorpayOrderId}</span>
-                          <button
-                            onClick={() => navigator.clipboard.writeText(selectedPayment.razorpayOrderId)}
-                            className="p-1 hover:bg-gray-200 rounded"
-                          >
-                            <Copy className="h-3 w-3 text-gray-400" />
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {/* Timestamps */}
-                <div>
-                  <h4 className="font-semibold text-gray-900 mb-3">Timeline</h4>
-                  <div className="space-y-2">
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Created:</span>
-                      <span>{new Date(selectedPayment.createdAt).toLocaleString()}</span>
-                    </div>
-                    {selectedPayment.authorizedAt && (
-                      <div className="flex justify-between">
-                        <span className="text-gray-600">Authorized:</span>
-                        <span>{new Date(selectedPayment.authorizedAt).toLocaleString()}</span>
-                      </div>
-                    )}
-                    {selectedPayment.capturedAt && (
-                      <div className="flex justify-between">
-                        <span className="text-gray-600">Captured:</span>
-                        <span>{new Date(selectedPayment.capturedAt).toLocaleString()}</span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* Actions */}
-                <div className="flex space-x-4 pt-4 border-t">
-                  {selectedPayment.razorpayPaymentId && (
-                    <button
-                      onClick={() => window.open(`https://dashboard.razorpay.com/app/payments/${selectedPayment.razorpayPaymentId}`, '_blank')}
-                      className="flex items-center space-x-2 bg-purple-600 text-white px-4 py-2 rounded-xl hover:bg-purple-700 transition-colors"
-                    >
-                      <ExternalLink className="h-4 w-4" />
-                      <span>View in Razorpay</span>
-                    </button>
-                  )}
-                  {selectedPayment.status === 'captured' && (
-                    <button className="flex items-center space-x-2 bg-red-600 text-white px-4 py-2 rounded-xl hover:bg-red-700 transition-colors">
-                      <RefreshCw className="h-4 w-4" />
-                      <span>Initiate Refund</span>
-                    </button>
-                  )}
-                </div>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
     </div>
   );
 
@@ -806,8 +649,10 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
     </div>
   );
 
-  // Add the rest of your existing render methods for categories, themes, stories, banners...
-  // (I'll keep the existing implementations you had)
+  // If Product Management tab is selected, render the ProductManagementPage
+  if (activeTab === 'product-management') {
+    return <ProductManagementPage onBack={() => setActiveTab('overview')} />;
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
