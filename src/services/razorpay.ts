@@ -29,39 +29,20 @@ export const createRazorpayOrder = async (orderData: {
   receipt: string;
   notes?: Record<string, string>;
 }): Promise<any> => {
-  try {
-    // In production, this should call your backend API
-    const response = await fetch('/api/razorpay/create-order', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(orderData),
-    });
-
-    if (!response.ok) {
-      throw new Error('Failed to create Razorpay order');
-    }
-
-    return await response.json();
-  } catch (error) {
-    console.error('Error creating Razorpay order:', error);
-    
-    // Mock response for development
-    return {
-      id: 'order_' + Date.now(),
-      entity: 'order',
-      amount: orderData.amount,
-      amount_paid: 0,
-      amount_due: orderData.amount,
-      currency: orderData.currency,
-      receipt: orderData.receipt,
-      status: 'created',
-      attempts: 0,
-      notes: orderData.notes || {},
-      created_at: Math.floor(Date.now() / 1000)
-    };
-  }
+  // Return mock response for development (no backend API call)
+  return {
+    id: 'order_' + Date.now(),
+    entity: 'order',
+    amount: orderData.amount,
+    amount_paid: 0,
+    amount_due: orderData.amount,
+    currency: orderData.currency,
+    receipt: orderData.receipt,
+    status: 'created',
+    attempts: 0,
+    notes: orderData.notes || {},
+    created_at: Math.floor(Date.now() / 1000)
+  };
 };
 
 // Initialize Razorpay payment
