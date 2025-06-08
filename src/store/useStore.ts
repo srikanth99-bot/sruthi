@@ -126,6 +126,7 @@ interface StoreState extends AuthState {
   
   setOrders: (orders: Order[]) => void;
   setSelectedOrder: (order: Order | null) => void;
+  setUser: (user: User) => void;
 }
 
 export const useStore = create<StoreState>()(
@@ -1055,6 +1056,7 @@ export const useStore = create<StoreState>()(
       // Admin actions
       setOrders: (orders) => set({ orders }),
       setSelectedOrder: (order) => set({ selectedOrder: order }),
+      setUser: (user) => set({ user }),
     }),
     {
       name: 'ikkat-store',
