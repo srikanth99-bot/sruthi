@@ -7,7 +7,7 @@ import CartDrawer from './components/Cart/CartDrawer';
 import HomePage from './pages/HomePage';
 import CollectionPage from './pages/CollectionPage';
 import ProductDetailPage from './pages/ProductDetailPage';
-import CheckoutPage from './pages/CheckoutPage';
+import SimpleCheckoutPage from './pages/SimpleCheckoutPage';
 import OrderConfirmationPage from './pages/OrderConfirmationPage';
 import CustomerProfilePage from './pages/CustomerProfilePage';
 import AdminRoute from './components/Admin/AdminRoute';
@@ -132,7 +132,7 @@ function App() {
       <main className="pb-20 md:pb-0">
         <AnimatePresence mode="wait">
           {currentPage === 'home' && (
-            <HomePage key="home\" onCategoryClick={handleCategoryClick} />
+            <HomePage key="home" onCategoryClick={handleCategoryClick} />
           )}
           {currentPage === 'collection' && (
             <CollectionPage 
@@ -151,7 +151,7 @@ function App() {
             />
           )}
           {currentPage === 'checkout' && (
-            <CheckoutPage
+            <SimpleCheckoutPage
               key="checkout"
               onBack={handleCheckoutBack}
               onOrderComplete={handleOrderComplete}
