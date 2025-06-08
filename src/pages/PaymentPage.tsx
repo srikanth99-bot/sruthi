@@ -720,7 +720,7 @@ const PaymentPage: React.FC<PaymentPageProps> = ({
               </p>
             </div>
           </div>
-        </div>
+        </motion.div>
       </div>
     </div>
   );
