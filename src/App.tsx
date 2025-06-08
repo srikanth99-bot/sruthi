@@ -10,7 +10,7 @@ import ProductDetailPage from './pages/ProductDetailPage';
 import CheckoutPage from './pages/CheckoutPage';
 import OrderConfirmationPage from './pages/OrderConfirmationPage';
 import CustomerProfilePage from './pages/CustomerProfilePage';
-import AdminDashboard from './pages/AdminDashboard';
+import AdminRoute from './components/Admin/AdminRoute';
 import LoginPage from './pages/LoginPage';
 import OrderTrackingPage from './pages/OrderTrackingPage';
 import { useStore } from './store/useStore';
@@ -22,7 +22,6 @@ function App() {
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [completedOrderId, setCompletedOrderId] = useState<string>('');
   const [trackingOrderId, setTrackingOrderId] = useState<string>('');
-  const [isAdminMode, setIsAdminMode] = useState(false);
   const { setProducts, isAuthenticated } = useStore();
 
   // Initialize with mock data
@@ -31,6 +30,14 @@ function App() {
       setProducts(mockProducts);
     });
   }, [setProducts]);
+
+  // Check if current path is admin
+  const isAdminRoute = window.location.pathname === '/admin';
+
+  // If admin route, show admin interface
+  if (isAdminRoute) {
+    return <AdminRoute />;
+  }
 
   const handleTabChange = (tab: string) => {
     // Check if user needs to login for certain pages
@@ -112,31 +119,6 @@ function App() {
     setTrackingOrderId('');
   };
 
-  // Toggle between customer and admin views
-  const toggleAdminMode = () => {
-    setIsAdminMode(!isAdminMode);
-    setCurrentPage(isAdminMode ? 'home' : 'dashboard');
-    setSelectedProduct(null);
-  };
-
-  if (isAdminMode) {
-    return (
-      <div className="min-h-screen bg-gray-50">
-        <AdminDashboard />
-        
-        {/* Admin Toggle */}
-        <motion.button
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-          onClick={toggleAdminMode}
-          className="fixed bottom-4 left-4 bg-gradient-to-r from-blue-500 to-cyan-500 text-white px-6 py-3 rounded-full shadow-2xl hover:shadow-3xl transition-all z-50 font-bold"
-        >
-          Customer View
-        </motion.button>
-      </div>
-    );
-  }
-
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Only show header on desktop */}
@@ -150,7 +132,7 @@ function App() {
       <main className="pb-20 md:pb-0">
         <AnimatePresence mode="wait">
           {currentPage === 'home' && (
-            <HomePage key="home\" onCategoryClick={handleCategoryClick} />
+            <HomePage key="home" onCategoryClick={handleCategoryClick} />
           )}
           {currentPage === 'collection' && (
             <CollectionPage 
@@ -235,16 +217,6 @@ function App() {
       </main>
 
       <BottomNav activeTab={currentPage} onTabChange={handleTabChange} />
-      
-      {/* Admin Toggle */}
-      <motion.button
-        whileHover={{ scale: 1.05 }}
-        whileTap={{ scale: 0.95 }}
-        onClick={toggleAdminMode}
-        className="fixed bottom-24 right-4 bg-gradient-to-r from-purple-500 to-pink-500 text-white px-6 py-3 rounded-full shadow-2xl hover:shadow-3xl transition-all z-50 font-bold md:bottom-4"
-      >
-        Admin View
-      </motion.button>
     </div>
   );
 }
