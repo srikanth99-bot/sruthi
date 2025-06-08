@@ -4,6 +4,8 @@ export interface Product {
   price: number;
   originalPrice?: number;
   category: string;
+  subcategory?: string;
+  subSubcategory?: string;
   images: string[];
   description: string;
   sizes: string[];
@@ -13,6 +15,27 @@ export interface Product {
   rating: number;
   reviewCount: number;
   tags: string[];
+  sku?: string;
+  weight?: number;
+  dimensions?: {
+    length: number;
+    width: number;
+    height: number;
+  };
+  // Stitched dress specific fields
+  availableSizes?: {
+    S: boolean;
+    M: boolean;
+    L: boolean;
+    XL: boolean;
+    XXL: boolean;
+  };
+  supportsFeedingFriendly?: boolean;
+  isStitchedDress?: boolean;
+  stockQuantity?: number;
+  lowStockThreshold?: number;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface CartItem {
@@ -222,6 +245,10 @@ export interface Category {
   icon?: string;
   color?: string;
   sortOrder: number;
+  parentId?: string; // For subcategories
+  level: number; // 0 = main category, 1 = subcategory, 2 = sub-subcategory
+  children?: Category[]; // Nested subcategories
+  autoDescription?: string; // Auto-fill description for products in this category
 }
 
 export interface Theme {
@@ -345,6 +372,23 @@ export interface Review {
   images?: string[];
   isVerified: boolean;
   helpfulCount: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ProductTemplate {
+  id: string;
+  categoryId: string;
+  name: string;
+  description: string;
+  defaultSizes: string[];
+  defaultColors: string[];
+  priceRange: {
+    min: number;
+    max: number;
+  };
+  tags: string[];
+  isActive: boolean;
   createdAt: string;
   updatedAt: string;
 }
