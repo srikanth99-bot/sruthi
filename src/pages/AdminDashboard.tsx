@@ -45,6 +45,7 @@ import {
 } from 'lucide-react';
 import { useStore } from '../store/useStore';
 import ProductManagementPage from './ProductManagementPage';
+import CategoriesManagementPage from './CategoriesManagementPage';
 import type { Order, Product, RazorpayPayment } from '../types';
 
 interface AdminDashboardProps {
@@ -179,7 +180,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
     { id: 'payments', label: 'Payments', icon: CreditCard, badge: payments.length },
     { id: 'products', label: 'Products', icon: Package, badge: totalProducts },
     { id: 'product-management', label: 'Product Management', icon: Boxes, badge: categories.length },
-    { id: 'categories', label: 'Categories', icon: Layers, badge: categories.length },
+    { id: 'categories', label: 'Categories', icon: FolderTree, badge: categories.length },
     { id: 'themes', label: 'Themes', icon: Globe, badge: themes.length },
     { id: 'stories', label: 'Stories', icon: MessageSquare, badge: stories.length },
     { id: 'banners', label: 'Banners', icon: Target, badge: banners.length },
@@ -652,6 +653,11 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
   // If Product Management tab is selected, render the ProductManagementPage
   if (activeTab === 'product-management') {
     return <ProductManagementPage onBack={() => setActiveTab('overview')} />;
+  }
+
+  // If Categories tab is selected, render the CategoriesManagementPage
+  if (activeTab === 'categories') {
+    return <CategoriesManagementPage onBack={() => setActiveTab('overview')} />;
   }
 
   return (
