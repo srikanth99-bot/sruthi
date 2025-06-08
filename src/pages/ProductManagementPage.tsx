@@ -1,37 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  ArrowLeft, 
-  Plus, 
-  Edit, 
-  Trash2, 
-  Save, 
-  X, 
-  FolderTree, 
-  Package, 
-  Upload, 
-  Image as ImageIcon,
-  Toggle,
-  Check,
-  ChevronRight,
-  ChevronDown,
-  Search,
-  Filter,
-  Grid,
-  List,
-  Eye,
-  Copy,
-  Move,
-  Settings,
-  Tag,
-  Layers,
-  FileText,
-  Camera,
-  Shirt,
-  Baby,
-  ToggleLeft,
-  ToggleRight
-} from 'lucide-react';
+import { ArrowLeft, Plus, Edit, Trash2, Save, X, FolderTree, Package, Upload, Image as ImageIcon, ToggleLeft as Toggle, Check, ChevronRight, ChevronDown, Search, Filter, Grid, List, Eye, Copy, Move, Settings, Tag, Layers, FileText, Camera, Shirt, Baby, ToggleLeft, ToggleRight } from 'lucide-react';
 import { useStore } from '../store/useStore';
 import type { Category, Product } from '../types';
 
