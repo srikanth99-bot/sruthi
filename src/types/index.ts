@@ -31,10 +31,13 @@ export interface Order {
   total: number;
   status: 'pending' | 'confirmed' | 'packed' | 'shipped' | 'delivered' | 'cancelled';
   address: Address;
-  paymentMethod: 'cod' | 'upi' | 'card' | 'netbanking' | 'wallet';
+  paymentMethod: 'cod' | 'upi' | 'card' | 'netbanking' | 'wallet' | 'razorpay';
   paymentStatus: 'pending' | 'processing' | 'completed' | 'failed' | 'refunded';
   paymentId?: string;
   transactionId?: string;
+  razorpayOrderId?: string;
+  razorpayPaymentId?: string;
+  razorpaySignature?: string;
   createdAt: string;
   updatedAt: string;
   trackingNumber?: string;
@@ -111,7 +114,7 @@ export interface SignupData {
 
 export interface PaymentMethod {
   id: string;
-  type: 'upi' | 'card' | 'netbanking' | 'wallet' | 'cod';
+  type: 'upi' | 'card' | 'netbanking' | 'wallet' | 'cod' | 'razorpay';
   name: string;
   description: string;
   icon: string;
@@ -164,6 +167,46 @@ export interface UPIPayment {
     bhim: string;
     generic: string;
   };
+}
+
+export interface RazorpayPayment {
+  id: string;
+  orderId: string;
+  customerName: string;
+  customerEmail: string;
+  customerPhone: string;
+  amount: number;
+  currency: string;
+  status: 'created' | 'authorized' | 'captured' | 'refunded' | 'failed';
+  method: 'card' | 'netbanking' | 'wallet' | 'upi' | 'emi';
+  bank?: string;
+  wallet?: string;
+  vpa?: string;
+  cardType?: string;
+  cardNetwork?: string;
+  razorpayOrderId: string;
+  razorpayPaymentId?: string;
+  razorpaySignature?: string;
+  fee: number;
+  tax: number;
+  errorCode?: string;
+  errorDescription?: string;
+  createdAt: string;
+  authorizedAt?: string;
+  capturedAt?: string;
+  refundedAt?: string;
+  notes?: Record<string, string>;
+  receipt?: string;
+}
+
+export interface RazorpayConfig {
+  keyId: string;
+  keySecret: string;
+  webhookSecret: string;
+  currency: string;
+  companyName: string;
+  companyLogo: string;
+  themeColor: string;
 }
 
 export interface Category {
@@ -272,6 +315,11 @@ export interface AdminStats {
   totalProducts: number;
   lowStockItems: number;
   recentOrders: Order[];
+  totalPayments: number;
+  todayPayments: number;
+  successfulPayments: number;
+  failedPayments: number;
+  totalRefunds: number;
 }
 
 export interface Notification {

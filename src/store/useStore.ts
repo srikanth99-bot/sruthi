@@ -14,7 +14,8 @@ import type {
   LoginCredentials,
   SignupData,
   Address,
-  Notification
+  Notification,
+  RazorpayPayment
 } from '../types';
 
 interface StoreState extends AuthState {
@@ -38,6 +39,7 @@ interface StoreState extends AuthState {
   // Admin state
   orders: Order[];
   selectedOrder: Order | null;
+  payments: RazorpayPayment[];
   
   // Notifications
   notifications: Notification[];
@@ -64,6 +66,22 @@ interface StoreState extends AuthState {
   getUserOrders: (userId: string) => Order[];
   getOrderById: (orderId: string) => Order | null;
   updateOrderStatus: (orderId: string, status: Order['status'], notes?: string) => void;
+  
+  // Payment actions
+  addPayment: (payment: RazorpayPayment) => void;
+  updatePayment: (paymentId: string, updates: Partial<RazorpayPayment>) => void;
+  getPaymentById: (paymentId: string) => RazorpayPayment | null;
+  getPaymentsByOrder: (orderId: string) => RazorpayPayment[];
+  getAllPayments: () => RazorpayPayment[];
+  getPaymentStats: () => {
+    total: number;
+    today: number;
+    successful: number;
+    failed: number;
+    refunded: number;
+    totalAmount: number;
+    todayAmount: number;
+  };
   
   // Wishlist actions
   addToWishlist: (productId: string) => void;
@@ -340,6 +358,60 @@ export const useStore = create<StoreState>()(
       filterDrawerOpen: false,
       orders: [],
       selectedOrder: null,
+      payments: [
+        // Mock payment data for demonstration
+        {
+          id: 'pay_1',
+          orderId: 'ORD001',
+          customerName: 'Priya Sharma',
+          customerEmail: 'priya@example.com',
+          customerPhone: '+91 9876543210',
+          amount: 4500,
+          currency: 'INR',
+          status: 'captured',
+          method: 'upi',
+          vpa: 'priya@paytm',
+          razorpayOrderId: 'order_razorpay_1',
+          razorpayPaymentId: 'pay_razorpay_1',
+          razorpaySignature: 'signature_1',
+          fee: 45,
+          tax: 8.1,
+          createdAt: '2024-01-15T10:30:00Z',
+          authorizedAt: '2024-01-15T10:31:00Z',
+          capturedAt: '2024-01-15T10:31:30Z',
+          receipt: 'receipt_1',
+          notes: {
+            orderId: 'ORD001',
+            customerEmail: 'priya@example.com'
+          }
+        },
+        {
+          id: 'pay_2',
+          orderId: 'ORD002',
+          customerName: 'Anjali Reddy',
+          customerEmail: 'anjali@example.com',
+          customerPhone: '+91 9876543211',
+          amount: 2400,
+          currency: 'INR',
+          status: 'captured',
+          method: 'card',
+          cardType: 'credit',
+          cardNetwork: 'Visa',
+          razorpayOrderId: 'order_razorpay_2',
+          razorpayPaymentId: 'pay_razorpay_2',
+          razorpaySignature: 'signature_2',
+          fee: 24,
+          tax: 4.32,
+          createdAt: '2024-01-14T15:45:00Z',
+          authorizedAt: '2024-01-14T15:46:00Z',
+          capturedAt: '2024-01-14T15:46:30Z',
+          receipt: 'receipt_2',
+          notes: {
+            orderId: 'ORD002',
+            customerEmail: 'anjali@example.com'
+          }
+        }
+      ],
       notifications: [],
 
       // Auth actions
@@ -696,6 +768,72 @@ export const useStore = create<StoreState>()(
         });
       },
 
+      // Payment actions
+      addPayment: (payment: RazorpayPayment) => {
+        const { payments } = get();
+        set({ payments: [...payments, payment] });
+      },
+
+      updatePayment: (paymentId: string, updates: Partial<RazorpayPayment>) => {
+        const { payments } = get();
+        set({
+          payments: payments.map(payment =>
+            payment.id === paymentId ? { ...payment, ...updates } : payment
+          )
+        });
+      },
+
+      getPaymentById: (paymentId: string) => {
+        const { payments } = get();
+        return payments.find(payment => payment.id === paymentId) || null;
+      },
+
+      getPaymentsByOrder: (orderId: string) => {
+        const { payments } = get();
+        return payments.filter(payment => payment.orderId === orderId);
+      },
+
+      getAllPayments: () => {
+        const { payments } = get();
+        return payments.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+      },
+
+      getPaymentStats: () => {
+        const { payments } = get();
+        const today = new Date().toDateString();
+        
+        const todayPayments = payments.filter(payment => 
+          new Date(payment.createdAt).toDateString() === today
+        );
+        
+        const successfulPayments = payments.filter(payment => 
+          payment.status === 'captured'
+        );
+        
+        const failedPayments = payments.filter(payment => 
+          payment.status === 'failed'
+        );
+        
+        const refundedPayments = payments.filter(payment => 
+          payment.status === 'refunded'
+        );
+
+        const totalAmount = successfulPayments.reduce((sum, payment) => sum + payment.amount, 0);
+        const todayAmount = todayPayments
+          .filter(payment => payment.status === 'captured')
+          .reduce((sum, payment) => sum + payment.amount, 0);
+
+        return {
+          total: payments.length,
+          today: todayPayments.length,
+          successful: successfulPayments.length,
+          failed: failedPayments.length,
+          refunded: refundedPayments.length,
+          totalAmount,
+          todayAmount
+        };
+      },
+
       // Wishlist actions
       addToWishlist: (productId: string) => {
         const { user } = get();
@@ -874,6 +1012,7 @@ export const useStore = create<StoreState>()(
         stories: state.stories,
         banners: state.banners,
         orders: state.orders,
+        payments: state.payments,
         notifications: state.notifications,
       }),
     }

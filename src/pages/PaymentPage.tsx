@@ -18,7 +18,8 @@ import {
   RefreshCw
 } from 'lucide-react';
 import { useStore } from '../store/useStore';
-import type { PaymentMethod, UPIPayment } from '../types';
+import { initializeRazorpayPayment, verifyPaymentSignature } from '../services/razorpay';
+import type { PaymentMethod, UPIPayment, Order } from '../types';
 
 interface PaymentPageProps {
   orderId: string;
@@ -35,8 +36,8 @@ const PaymentPage: React.FC<PaymentPageProps> = ({
   onPaymentSuccess, 
   onPaymentFailure 
 }) => {
-  const { user } = useStore();
-  const [selectedMethod, setSelectedMethod] = useState<PaymentMethod['type']>('upi');
+  const { user, getOrderById, addPayment, updatePayment } = useStore();
+  const [selectedMethod, setSelectedMethod] = useState<PaymentMethod['type']>('razorpay');
   const [paymentStatus, setPaymentStatus] = useState<'idle' | 'processing' | 'success' | 'failed'>('idle');
   const [upiPayment, setUpiPayment] = useState<UPIPayment | null>(null);
   const [countdown, setCountdown] = useState(300); // 5 minutes
@@ -48,7 +49,20 @@ const PaymentPage: React.FC<PaymentPageProps> = ({
     name: ''
   });
 
+  const order = getOrderById(orderId);
+
   const paymentMethods: PaymentMethod[] = [
+    {
+      id: 'razorpay',
+      type: 'razorpay',
+      name: 'Razorpay Payment',
+      description: 'UPI, Cards, Net Banking, Wallets - All in one',
+      icon: '💳',
+      isActive: true,
+      processingFee: 2,
+      minAmount: 1,
+      maxAmount: 1000000
+    },
     {
       id: 'upi',
       type: 'upi',
@@ -142,7 +156,66 @@ const PaymentPage: React.FC<PaymentPageProps> = ({
     };
   };
 
+  const handleRazorpayPayment = async () => {
+    if (!order) {
+      onPaymentFailure('Order not found');
+      return;
+    }
+
+    setPaymentStatus('processing');
+
+    try {
+      await initializeRazorpayPayment(
+        order,
+        (response) => {
+          // Payment successful
+          const paymentData = {
+            id: 'pay_' + Date.now(),
+            orderId: order.id,
+            customerName: order.customerName,
+            customerEmail: order.customerEmail,
+            customerPhone: order.customerPhone,
+            amount: order.total,
+            currency: 'INR',
+            status: 'captured' as const,
+            method: 'card' as const, // This would be determined by Razorpay
+            razorpayOrderId: response.razorpay_order_id,
+            razorpayPaymentId: response.razorpay_payment_id,
+            razorpaySignature: response.razorpay_signature,
+            fee: Math.round(order.total * 0.02), // 2% fee
+            tax: Math.round(order.total * 0.02 * 0.18), // 18% GST on fee
+            createdAt: new Date().toISOString(),
+            authorizedAt: new Date().toISOString(),
+            capturedAt: new Date().toISOString(),
+            receipt: order.id,
+            notes: {
+              orderId: order.id,
+              customerEmail: order.customerEmail
+            }
+          };
+
+          addPayment(paymentData);
+          setPaymentStatus('success');
+          onPaymentSuccess(response.razorpay_payment_id);
+        },
+        (error) => {
+          // Payment failed
+          setPaymentStatus('failed');
+          onPaymentFailure(error.error || 'Payment failed');
+        }
+      );
+    } catch (error) {
+      setPaymentStatus('failed');
+      onPaymentFailure('Payment initialization failed');
+    }
+  };
+
   const handlePayment = async () => {
+    if (selectedMethod === 'razorpay') {
+      await handleRazorpayPayment();
+      return;
+    }
+
     setPaymentStatus('processing');
 
     try {
@@ -229,6 +302,50 @@ const PaymentPage: React.FC<PaymentPageProps> = ({
         {selectedMethod === method.type && (
           <Check className="h-6 w-6 text-purple-600" />
         )}
+      </div>
+    </motion.div>
+  );
+
+  const renderRazorpayPayment = () => (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="text-center space-y-6"
+    >
+      <div className="text-6xl">💳</div>
+      <h3 className="text-xl font-bold text-gray-900">Razorpay Secure Payment</h3>
+      <p className="text-gray-600">
+        Pay securely using UPI, Cards, Net Banking, or Wallets through Razorpay
+      </p>
+      
+      <div className="bg-blue-50 border border-blue-200 rounded-xl p-6">
+        <h4 className="font-semibold text-blue-900 mb-2">Payment Options Available:</h4>
+        <div className="grid grid-cols-2 gap-4 text-blue-700 text-sm">
+          <div className="flex items-center space-x-2">
+            <span>📱</span>
+            <span>UPI (Google Pay, PhonePe, Paytm)</span>
+          </div>
+          <div className="flex items-center space-x-2">
+            <span>💳</span>
+            <span>Credit/Debit Cards</span>
+          </div>
+          <div className="flex items-center space-x-2">
+            <span>🏦</span>
+            <span>Net Banking</span>
+          </div>
+          <div className="flex items-center space-x-2">
+            <span>👛</span>
+            <span>Digital Wallets</span>
+          </div>
+        </div>
+      </div>
+
+      <div className="bg-green-50 border border-green-200 rounded-xl p-4 flex items-center space-x-3">
+        <Shield className="h-6 w-6 text-green-600" />
+        <div>
+          <h4 className="font-semibold text-green-900">Secure & Trusted</h4>
+          <p className="text-green-700 text-sm">256-bit SSL encryption & PCI DSS compliant</p>
+        </div>
       </div>
     </motion.div>
   );
@@ -482,6 +599,7 @@ const PaymentPage: React.FC<PaymentPageProps> = ({
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
                   >
+                    {selectedMethod === 'razorpay' && renderRazorpayPayment()}
                     {selectedMethod === 'upi' && renderUPIPayment()}
                     {selectedMethod === 'card' && renderCardPayment()}
                     {selectedMethod === 'cod' && renderCODPayment()}
@@ -602,7 +720,7 @@ const PaymentPage: React.FC<PaymentPageProps> = ({
               </p>
             </div>
           </div>
-        </motion.div>
+        </div>
       </div>
     </div>
   );
