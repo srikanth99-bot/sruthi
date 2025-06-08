@@ -132,7 +132,7 @@ function App() {
       <main className="pb-20 md:pb-0">
         <AnimatePresence mode="wait">
           {currentPage === 'home' && (
-            <HomePage key="home\" onCategoryClick={handleCategoryClick} />
+            <HomePage key="home" onCategoryClick={handleCategoryClick} />
           )}
           {currentPage === 'collection' && (
             <CollectionPage 
