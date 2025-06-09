@@ -6,6 +6,7 @@ import MobileMenu from './components/Layout/MobileMenu';
 import CartDrawer from './components/Cart/CartDrawer';
 import HomePage from './pages/HomePage';
 import CollectionPage from './pages/CollectionPage';
+import ProductDetailPage from './pages/ProductDetailPage';
 import SimpleCheckoutPage from './pages/SimpleCheckoutPage';
 import OrderConfirmationPage from './pages/OrderConfirmationPage';
 import CustomerProfilePage from './pages/CustomerProfilePage';
@@ -13,10 +14,12 @@ import AdminRoute from './components/Admin/AdminRoute';
 import LoginPage from './pages/LoginPage';
 import OrderTrackingPage from './pages/OrderTrackingPage';
 import { useStore } from './store/useStore';
+import type { Product } from './types';
 
 function App() {
   const [currentPage, setCurrentPage] = useState('home');
   const [selectedCategory, setSelectedCategory] = useState<string>('');
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [completedOrderId, setCompletedOrderId] = useState<string>('');
   const [trackingOrderId, setTrackingOrderId] = useState<string>('');
   const { setProducts, isAuthenticated } = useStore();
@@ -44,20 +47,29 @@ function App() {
     }
     
     setCurrentPage(tab);
+    setSelectedProduct(null);
   };
 
   const handleCategoryClick = (category: string) => {
     setSelectedCategory(category);
     setCurrentPage('collection');
+    setSelectedProduct(null);
+  };
+
+  const handleProductClick = (product: Product) => {
+    setSelectedProduct(product);
+    setCurrentPage('product-detail');
   };
 
   const handleBackToHome = () => {
     setCurrentPage('home');
     setSelectedCategory('');
+    setSelectedProduct(null);
   };
 
   const handleBackToCollection = () => {
     setCurrentPage('collection');
+    setSelectedProduct(null);
   };
 
   const handleBuyNow = () => {
@@ -69,7 +81,11 @@ function App() {
   };
 
   const handleCheckoutBack = () => {
-    setCurrentPage('collection');
+    if (selectedProduct) {
+      setCurrentPage('product-detail');
+    } else {
+      setCurrentPage('collection');
+    }
   };
 
   const handleOrderComplete = (orderId: string) => {
@@ -80,6 +96,7 @@ function App() {
   const handleOrderConfirmationBack = () => {
     setCurrentPage('home');
     setSelectedCategory('');
+    setSelectedProduct(null);
     setCompletedOrderId('');
   };
 
@@ -100,11 +117,6 @@ function App() {
   const handleTrackingBack = () => {
     setCurrentPage('profile');
     setTrackingOrderId('');
-  };
-
-  const handleProductClick = (product: any) => {
-    // Handle product click - could open product detail modal or navigate to product page
-    console.log('Product clicked:', product);
   };
 
   return (
@@ -128,6 +140,14 @@ function App() {
               category={selectedCategory} 
               onBack={handleBackToHome}
               onProductClick={handleProductClick}
+            />
+          )}
+          {currentPage === 'product-detail' && selectedProduct && (
+            <ProductDetailPage
+              key="product-detail"
+              product={selectedProduct}
+              onBack={handleBackToCollection}
+              onBuyNow={handleBuyNow}
             />
           )}
           {currentPage === 'checkout' && (
