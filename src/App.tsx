@@ -102,6 +102,11 @@ function App() {
     setTrackingOrderId('');
   };
 
+  const handleProductClick = (product: any) => {
+    // Handle product click - could open product detail modal or navigate to product page
+    console.log('Product clicked:', product);
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Only show header on desktop */}
@@ -115,13 +120,14 @@ function App() {
       <main className="pb-20 md:pb-0">
         <AnimatePresence mode="wait">
           {currentPage === 'home' && (
-            <HomePage key="home\" onCategoryClick={handleCategoryClick} />
+            <HomePage key="home" onCategoryClick={handleCategoryClick} />
           )}
           {currentPage === 'collection' && (
             <CollectionPage 
               key="collection" 
               category={selectedCategory} 
               onBack={handleBackToHome}
+              onProductClick={handleProductClick}
             />
           )}
           {currentPage === 'checkout' && (
