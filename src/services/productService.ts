@@ -47,28 +47,28 @@ export const productService = {
   // Get all products
   async getProducts(): Promise<Product[]> {
     if (!isSupabaseConfigured()) {
-      console.log('Using mock data - Supabase not configured');
+      console.log('📦 Using mock data - Supabase not configured');
       return mockProducts;
     }
 
     try {
-      console.log('Fetching products from Supabase...');
+      console.log('📡 Fetching products from Supabase...');
       const { data, error } = await supabase
         .from('products')
         .select('*')
         .order('created_at', { ascending: false });
 
       if (error) {
-        console.error('Error fetching products:', error);
-        console.log('Falling back to mock data');
+        console.error('❌ Error fetching products:', error);
+        console.log('🔄 Falling back to mock data');
         return mockProducts;
       }
 
       console.log(`✅ Loaded ${data?.length || 0} products from Supabase`);
       return data?.map(transformDbProduct) || [];
     } catch (error) {
-      console.error('Error fetching products:', error);
-      console.log('Falling back to mock data');
+      console.error('❌ Error fetching products:', error);
+      console.log('🔄 Falling back to mock data');
       return mockProducts;
     }
   },
@@ -87,13 +87,13 @@ export const productService = {
         .single();
 
       if (error) {
-        console.error('Error fetching product:', error);
+        console.error('❌ Error fetching product:', error);
         return null;
       }
 
       return data ? transformDbProduct(data) : null;
     } catch (error) {
-      console.error('Error fetching product:', error);
+      console.error('❌ Error fetching product:', error);
       return null;
     }
   },
@@ -101,7 +101,7 @@ export const productService = {
   // Create product
   async createProduct(product: Partial<Product>): Promise<Product | null> {
     if (!isSupabaseConfigured()) {
-      console.log('Demo mode: Product creation simulated');
+      console.log('⚠️  Demo mode: Product creation simulated');
       const newProduct: Product = {
         id: 'demo_' + Date.now(),
         name: product.name || '',
@@ -126,7 +126,7 @@ export const productService = {
     }
 
     try {
-      console.log('Creating product in Supabase...', product.name);
+      console.log('💾 Creating product in Supabase...', product.name);
       const { data, error } = await supabase
         .from('products')
         .insert([transformProductToDb(product)])
@@ -134,14 +134,14 @@ export const productService = {
         .single();
 
       if (error) {
-        console.error('Error creating product:', error);
+        console.error('❌ Error creating product:', error);
         throw error;
       }
 
       console.log('✅ Product created successfully:', data.name);
       return data ? transformDbProduct(data) : null;
     } catch (error) {
-      console.error('Error creating product:', error);
+      console.error('❌ Error creating product:', error);
       throw error;
     }
   },
@@ -149,12 +149,12 @@ export const productService = {
   // Update product
   async updateProduct(id: string, updates: Partial<Product>): Promise<Product | null> {
     if (!isSupabaseConfigured()) {
-      console.log('Demo mode: Product update simulated');
+      console.log('⚠️  Demo mode: Product update simulated');
       return null;
     }
 
     try {
-      console.log('Updating product in Supabase...', id);
+      console.log('📝 Updating product in Supabase...', id);
       const { data, error } = await supabase
         .from('products')
         .update(transformProductToDb(updates))
@@ -163,14 +163,14 @@ export const productService = {
         .single();
 
       if (error) {
-        console.error('Error updating product:', error);
+        console.error('❌ Error updating product:', error);
         throw error;
       }
 
       console.log('✅ Product updated successfully');
       return data ? transformDbProduct(data) : null;
     } catch (error) {
-      console.error('Error updating product:', error);
+      console.error('❌ Error updating product:', error);
       throw error;
     }
   },
@@ -178,26 +178,26 @@ export const productService = {
   // Delete product
   async deleteProduct(id: string): Promise<boolean> {
     if (!isSupabaseConfigured()) {
-      console.log('Demo mode: Product deletion simulated');
+      console.log('⚠️  Demo mode: Product deletion simulated');
       return true;
     }
 
     try {
-      console.log('Deleting product from Supabase...', id);
+      console.log('🗑️  Deleting product from Supabase...', id);
       const { error } = await supabase
         .from('products')
         .delete()
         .eq('id', id);
 
       if (error) {
-        console.error('Error deleting product:', error);
+        console.error('❌ Error deleting product:', error);
         throw error;
       }
 
       console.log('✅ Product deleted successfully');
       return true;
     } catch (error) {
-      console.error('Error deleting product:', error);
+      console.error('❌ Error deleting product:', error);
       throw error;
     }
   },
