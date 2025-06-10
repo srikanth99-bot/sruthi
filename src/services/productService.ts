@@ -6,8 +6,8 @@ import { mockProducts } from '../data/mockData';
 const transformDbProduct = (dbProduct: any): Product => ({
   id: dbProduct.id,
   name: dbProduct.name,
-  price: dbProduct.price,
-  originalPrice: dbProduct.original_price,
+  price: dbProduct.price / 100, // Convert from paise to rupees
+  originalPrice: dbProduct.original_price ? dbProduct.original_price / 100 : undefined,
   category: dbProduct.category,
   description: dbProduct.description,
   images: dbProduct.images || [],
@@ -15,8 +15,8 @@ const transformDbProduct = (dbProduct: any): Product => ({
   colors: dbProduct.colors || [],
   inStock: dbProduct.stock > 0,
   featured: dbProduct.featured,
-  rating: dbProduct.rating,
-  reviewCount: dbProduct.review_count,
+  rating: parseFloat(dbProduct.rating) || 4.5,
+  reviewCount: dbProduct.review_count || 0,
   tags: dbProduct.tags || [],
   supportsFeedingFriendly: dbProduct.supports_feeding_friendly,
   isStitchedDress: dbProduct.is_stitched_dress,
@@ -27,8 +27,8 @@ const transformDbProduct = (dbProduct: any): Product => ({
 // Transform Product type to database insert
 const transformProductToDb = (product: Partial<Product>) => ({
   name: product.name,
-  price: product.price,
-  original_price: product.originalPrice,
+  price: Math.round((product.price || 0) * 100), // Convert to paise
+  original_price: product.originalPrice ? Math.round(product.originalPrice * 100) : null,
   category: product.category,
   description: product.description || '',
   images: product.images || [],
@@ -52,6 +52,7 @@ export const productService = {
     }
 
     try {
+      console.log('Fetching products from Supabase...');
       const { data, error } = await supabase
         .from('products')
         .select('*')
@@ -59,13 +60,16 @@ export const productService = {
 
       if (error) {
         console.error('Error fetching products:', error);
-        return mockProducts; // Fallback to mock data
+        console.log('Falling back to mock data');
+        return mockProducts;
       }
 
+      console.log(`✅ Loaded ${data?.length || 0} products from Supabase`);
       return data?.map(transformDbProduct) || [];
     } catch (error) {
       console.error('Error fetching products:', error);
-      return mockProducts; // Fallback to mock data
+      console.log('Falling back to mock data');
+      return mockProducts;
     }
   },
 
@@ -97,9 +101,9 @@ export const productService = {
   // Create product
   async createProduct(product: Partial<Product>): Promise<Product | null> {
     if (!isSupabaseConfigured()) {
-      console.log('Mock mode: Product would be created');
+      console.log('Demo mode: Product creation simulated');
       const newProduct: Product = {
-        id: 'mock_' + Date.now(),
+        id: 'demo_' + Date.now(),
         name: product.name || '',
         price: product.price || 0,
         originalPrice: product.originalPrice,
@@ -122,6 +126,7 @@ export const productService = {
     }
 
     try {
+      console.log('Creating product in Supabase...', product.name);
       const { data, error } = await supabase
         .from('products')
         .insert([transformProductToDb(product)])
@@ -133,6 +138,7 @@ export const productService = {
         throw error;
       }
 
+      console.log('✅ Product created successfully:', data.name);
       return data ? transformDbProduct(data) : null;
     } catch (error) {
       console.error('Error creating product:', error);
@@ -143,11 +149,12 @@ export const productService = {
   // Update product
   async updateProduct(id: string, updates: Partial<Product>): Promise<Product | null> {
     if (!isSupabaseConfigured()) {
-      console.log('Mock mode: Product would be updated');
+      console.log('Demo mode: Product update simulated');
       return null;
     }
 
     try {
+      console.log('Updating product in Supabase...', id);
       const { data, error } = await supabase
         .from('products')
         .update(transformProductToDb(updates))
@@ -160,6 +167,7 @@ export const productService = {
         throw error;
       }
 
+      console.log('✅ Product updated successfully');
       return data ? transformDbProduct(data) : null;
     } catch (error) {
       console.error('Error updating product:', error);
@@ -170,11 +178,12 @@ export const productService = {
   // Delete product
   async deleteProduct(id: string): Promise<boolean> {
     if (!isSupabaseConfigured()) {
-      console.log('Mock mode: Product would be deleted');
+      console.log('Demo mode: Product deletion simulated');
       return true;
     }
 
     try {
+      console.log('Deleting product from Supabase...', id);
       const { error } = await supabase
         .from('products')
         .delete()
@@ -185,6 +194,7 @@ export const productService = {
         throw error;
       }
 
+      console.log('✅ Product deleted successfully');
       return true;
     } catch (error) {
       console.error('Error deleting product:', error);
