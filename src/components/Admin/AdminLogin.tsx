@@ -12,13 +12,14 @@ import {
   User,
   Mail
 } from 'lucide-react';
-import { supabase } from '../../lib/supabase';
+import { useStore } from '../../store/useStore';
 
 interface AdminLoginProps {
   onLogin: (success: boolean) => void;
 }
 
 const AdminLogin: React.FC<AdminLoginProps> = ({ onLogin }) => {
+  const { adminLogin } = useStore();
   const [credentials, setCredentials] = useState({
     email: '',
     password: ''
@@ -46,12 +47,14 @@ const AdminLogin: React.FC<AdminLoginProps> = ({ onLogin }) => {
     }
 
     try {
-      const { data, error: authError } = await supabase.auth.signInWithPassword({
-        email: credentials.email,
-        password: credentials.password,
-      });
-
-      if (authError) {
+      const success = await adminLogin(credentials.email, credentials.password);
+      
+      if (success) {
+        // Successful login
+        localStorage.removeItem('adminAttempts');
+        localStorage.removeItem('adminLockoutEnd');
+        onLogin(true);
+      } else {
         // Failed login
         const newAttempts = attempts + 1;
         setAttempts(newAttempts);
@@ -62,13 +65,8 @@ const AdminLogin: React.FC<AdminLoginProps> = ({ onLogin }) => {
           localStorage.setItem('adminLockoutEnd', lockoutEnd.toString());
           setError(`Too many failed attempts. Account locked for 15 minutes.`);
         } else {
-          setError(authError.message || `Invalid credentials. ${MAX_ATTEMPTS - newAttempts} attempts remaining.`);
+          setError(`Invalid credentials. ${MAX_ATTEMPTS - newAttempts} attempts remaining.`);
         }
-      } else if (data.user) {
-        // Successful login
-        localStorage.removeItem('adminAttempts');
-        localStorage.removeItem('adminLockoutEnd');
-        onLogin(true);
       }
     } catch (error) {
       setError('Login failed. Please try again.');
@@ -204,8 +202,11 @@ const AdminLogin: React.FC<AdminLoginProps> = ({ onLogin }) => {
           <div className="mt-8 pt-6 border-t border-white/20">
             <div className="text-center text-gray-400 text-sm">
               <p className="mb-2">🔒 Demo Credentials:</p>
-              <p className="font-mono text-xs">Email: admin@looom.shop</p>
-              <p className="font-mono text-xs">Password: admin123</p>
+              <div className="bg-white/5 rounded-lg p-3 mb-3">
+                <p className="font-mono text-xs text-green-300">Email: admin@looom.shop</p>
+                <p className="font-mono text-xs text-green-300">Password: admin123</p>
+              </div>
+              <p className="text-xs">Use these credentials to access the admin panel</p>
             </div>
           </div>
 

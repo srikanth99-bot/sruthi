@@ -54,7 +54,7 @@ interface StoreState extends AuthState {
   login: (credentials: LoginCredentials) => Promise<boolean>;
   adminLogin: (email: string, password: string) => Promise<boolean>;
   signup: (data: SignupData) => Promise<boolean>;
-  logout: () => void;
+  logout: () => Promise<void>;
   updateProfile: (updates: Partial<User>) => void;
   addAddress: (address: Address) => void;
   updateAddress: (addressId: string, updates: Partial<Address>) => void;
@@ -540,9 +540,25 @@ export const useStore = create<StoreState>()(
 
       adminLogin: async (email: string, password: string) => {
         try {
-          const result = await signInAsAdmin(email, password);
-          
-          if (result.success) {
+          // Demo credentials check first
+          const demoCredentials = {
+            email: 'admin@looom.shop',
+            password: 'admin123'
+          };
+
+          let authSuccess = false;
+
+          // Check demo credentials first
+          if (email === demoCredentials.email && password === demoCredentials.password) {
+            authSuccess = true;
+            console.log('✅ Demo admin login successful');
+          } else if (isSupabaseConfigured()) {
+            // Try Supabase authentication if configured
+            const result = await signInAsAdmin(email, password);
+            authSuccess = result.success;
+          }
+
+          if (authSuccess) {
             // Create admin user
             const adminUser: User = {
               id: 'admin_1',
@@ -571,6 +587,14 @@ export const useStore = create<StoreState>()(
               user: adminUser,
               token: 'admin_token_' + Date.now(),
               refreshToken: 'admin_refresh_token_' + Date.now()
+            });
+
+            // Add admin login notification
+            get().addNotification({
+              type: 'system',
+              title: 'Admin Access Granted',
+              message: 'Welcome to the admin dashboard!',
+              isRead: false
             });
 
             return true;
