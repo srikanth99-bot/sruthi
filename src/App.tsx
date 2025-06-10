@@ -23,12 +23,17 @@ function App() {
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [completedOrderId, setCompletedOrderId] = useState<string>('');
   const [trackingOrderId, setTrackingOrderId] = useState<string>('');
-  const { loadProducts, isAuthenticated, isLoadingProducts } = useStore();
+  const { 
+    initializeApp, 
+    isAuthenticated, 
+    isLoadingProducts, 
+    isInitialized 
+  } = useStore();
 
-  // Load products on app start
+  // Initialize app on mount
   useEffect(() => {
-    loadProducts();
-  }, [loadProducts]);
+    initializeApp();
+  }, [initializeApp]);
 
   // Check if current path is admin
   const isAdminRoute = window.location.pathname === '/admin';
@@ -118,13 +123,13 @@ function App() {
     setTrackingOrderId('');
   };
 
-  // Show loading screen while products are loading
-  if (isLoadingProducts) {
+  // Show loading screen while app is initializing
+  if (!isInitialized || isLoadingProducts) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-purple-600 mx-auto mb-4"></div>
-          <h2 className="text-xl font-semibold text-gray-900 mb-2">Loading Products...</h2>
+          <h2 className="text-xl font-semibold text-gray-900 mb-2">Loading looom.shop...</h2>
           <p className="text-gray-600">
             {isSupabaseConfigured() 
               ? 'Connecting to database...' 

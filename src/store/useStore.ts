@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { productService } from '../services/productService';
-import { isSupabaseConfigured } from '../lib/supabase';
+import { isSupabaseConfigured, initializeSupabase } from '../lib/supabase';
 import type { 
   Product, 
   CartItem, 
@@ -48,6 +48,7 @@ interface StoreState extends AuthState {
   
   // Loading states
   isLoadingProducts: boolean;
+  isInitialized: boolean;
   
   // Auth actions
   login: (credentials: LoginCredentials) => Promise<boolean>;
@@ -100,6 +101,7 @@ interface StoreState extends AuthState {
   getUnreadNotificationCount: () => number;
   
   // Product actions
+  initializeApp: () => Promise<void>;
   loadProducts: () => Promise<void>;
   createProduct: (product: Partial<Product>) => Promise<Product | null>;
   updateProduct: (id: string, updates: Partial<Product>) => Promise<Product | null>;
@@ -154,6 +156,7 @@ export const useStore = create<StoreState>()(
       cartOpen: false,
       products: [],
       isLoadingProducts: false,
+      isInitialized: false,
       categories: [
         {
           id: 'cat_1',
@@ -333,6 +336,23 @@ export const useStore = create<StoreState>()(
       selectedOrder: null,
       payments: [],
       notifications: [],
+
+      // Initialize app
+      initializeApp: async () => {
+        if (get().isInitialized) return;
+        
+        console.log('🚀 Initializing looom.shop...');
+        
+        // Initialize Supabase connection
+        const supabaseConnected = await initializeSupabase();
+        
+        // Load products
+        await get().loadProducts();
+        
+        set({ isInitialized: true });
+        
+        console.log('✅ App initialized successfully');
+      },
 
       // Product actions
       loadProducts: async () => {
