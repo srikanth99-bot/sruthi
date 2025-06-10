@@ -52,12 +52,8 @@ const ensureAuthenticated = async () => {
   const { data: { user }, error } = await supabase.auth.getUser();
   
   if (error || !user) {
-    // Try to sign in anonymously for admin operations
-    const { error: signInError } = await supabase.auth.signInAnonymously();
-    if (signInError) {
-      console.error('Authentication failed:', signInError);
-      throw new Error('Authentication required for this operation');
-    }
+    console.error('Authentication failed:', error);
+    throw new Error('Authentication required for this operation. Please log in to continue.');
   }
   
   return true;
