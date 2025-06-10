@@ -343,15 +343,20 @@ export const useStore = create<StoreState>()(
         
         console.log('🚀 Initializing looom.shop...');
         
-        // Initialize Supabase connection
-        const supabaseConnected = await initializeSupabase();
-        
-        // Load products
-        await get().loadProducts();
-        
-        set({ isInitialized: true });
-        
-        console.log('✅ App initialized successfully');
+        try {
+          // Initialize Supabase connection
+          const supabaseConnected = await initializeSupabase();
+          
+          // Load products
+          await get().loadProducts();
+          
+          set({ isInitialized: true });
+          
+          console.log('✅ App initialized successfully');
+        } catch (error) {
+          console.error('❌ App initialization failed:', error);
+          set({ isInitialized: true }); // Still mark as initialized to prevent infinite loops
+        }
       },
 
       // Product actions
