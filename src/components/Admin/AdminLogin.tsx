@@ -6,10 +6,13 @@ import {
   EyeOff, 
   Shield, 
   AlertCircle, 
+  Check,
   Loader,
   KeyRound,
-  User
+  User,
+  Mail
 } from 'lucide-react';
+import { signInAsAdmin } from '../../lib/supabase';
 
 interface AdminLoginProps {
   onLogin: (success: boolean) => void;
@@ -17,19 +20,13 @@ interface AdminLoginProps {
 
 const AdminLogin: React.FC<AdminLoginProps> = ({ onLogin }) => {
   const [credentials, setCredentials] = useState({
-    username: '',
+    email: '',
     password: ''
   });
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [attempts, setAttempts] = useState(0);
-
-  // Admin credentials (in production, this should be handled by your backend)
-  const ADMIN_CREDENTIALS = {
-    username: 'admin',
-    password: 'looom@admin2024' // Change this to a strong password
-  };
 
   const MAX_ATTEMPTS = 3;
   const LOCKOUT_TIME = 15 * 60 * 1000; // 15 minutes
@@ -48,35 +45,35 @@ const AdminLogin: React.FC<AdminLoginProps> = ({ onLogin }) => {
       return;
     }
 
-    // Simulate API delay
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    try {
+      const result = await signInAsAdmin(credentials.email, credentials.password);
 
-    if (
-      credentials.username === ADMIN_CREDENTIALS.username &&
-      credentials.password === ADMIN_CREDENTIALS.password
-    ) {
-      // Successful login
-      localStorage.removeItem('adminAttempts');
-      localStorage.removeItem('adminLockoutEnd');
-      localStorage.setItem('adminSession', Date.now().toString());
-      localStorage.setItem('adminSessionExpiry', (Date.now() + 8 * 60 * 60 * 1000).toString()); // 8 hours
-      onLogin(true);
-    } else {
-      // Failed login
-      const newAttempts = attempts + 1;
-      setAttempts(newAttempts);
-      localStorage.setItem('adminAttempts', newAttempts.toString());
-
-      if (newAttempts >= MAX_ATTEMPTS) {
-        const lockoutEnd = Date.now() + LOCKOUT_TIME;
-        localStorage.setItem('adminLockoutEnd', lockoutEnd.toString());
-        setError(`Too many failed attempts. Account locked for 15 minutes.`);
+      if (result.success) {
+        // Successful login
+        localStorage.removeItem('adminAttempts');
+        localStorage.removeItem('adminLockoutEnd');
+        localStorage.setItem('adminSession', Date.now().toString());
+        localStorage.setItem('adminSessionExpiry', (Date.now() + 8 * 60 * 60 * 1000).toString()); // 8 hours
+        onLogin(true);
       } else {
-        setError(`Invalid credentials. ${MAX_ATTEMPTS - newAttempts} attempts remaining.`);
-      }
-    }
+        // Failed login
+        const newAttempts = attempts + 1;
+        setAttempts(newAttempts);
+        localStorage.setItem('adminAttempts', newAttempts.toString());
 
-    setIsLoading(false);
+        if (newAttempts >= MAX_ATTEMPTS) {
+          const lockoutEnd = Date.now() + LOCKOUT_TIME;
+          localStorage.setItem('adminLockoutEnd', lockoutEnd.toString());
+          setError(`Too many failed attempts. Account locked for 15 minutes.`);
+        } else {
+          setError(result.error || `Invalid credentials. ${MAX_ATTEMPTS - newAttempts} attempts remaining.`);
+        }
+      }
+    } catch (error) {
+      setError('Login failed. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   React.useEffect(() => {
@@ -137,19 +134,19 @@ const AdminLogin: React.FC<AdminLoginProps> = ({ onLogin }) => {
           )}
 
           <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Username */}
+            {/* Email */}
             <div>
               <label className="block text-white font-medium mb-2">
-                Username
+                Email Address
               </label>
               <div className="relative">
-                <User className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                <Mail className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
                 <input
-                  type="text"
-                  value={credentials.username}
-                  onChange={(e) => setCredentials({ ...credentials, username: e.target.value })}
+                  type="email"
+                  value={credentials.email}
+                  onChange={(e) => setCredentials({ ...credentials, email: e.target.value })}
                   className="w-full pl-12 pr-4 py-4 bg-white/10 border border-white/20 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent backdrop-blur-sm"
-                  placeholder="Enter username"
+                  placeholder="Enter your email"
                   required
                 />
               </div>
@@ -202,12 +199,19 @@ const AdminLogin: React.FC<AdminLoginProps> = ({ onLogin }) => {
             </motion.button>
           </form>
 
-          {/* Security Info */}
+          {/* Demo Credentials Info */}
           <div className="mt-8 pt-6 border-t border-white/20">
             <div className="text-center text-gray-400 text-sm">
-              <p className="mb-2">🔒 This area is protected by advanced security</p>
-              <p>All login attempts are monitored and logged</p>
+              <p className="mb-2">🔒 Demo Credentials:</p>
+              <p className="font-mono text-xs">Email: admin@looom.shop</p>
+              <p className="font-mono text-xs">Password: admin123</p>
             </div>
+          </div>
+
+          {/* Security Info */}
+          <div className="mt-4 text-center text-gray-400 text-sm">
+            <p className="mb-2">🔒 This area is protected by advanced security</p>
+            <p>All login attempts are monitored and logged</p>
           </div>
         </div>
 

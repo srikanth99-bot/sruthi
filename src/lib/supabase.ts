@@ -78,3 +78,72 @@ export const initializeSupabase = async () => {
     return false;
   }
 };
+
+// Admin authentication helper
+export const signInAsAdmin = async (email: string, password: string) => {
+  if (!isSupabaseConfigured()) {
+    console.log('⚠️  Demo mode: Admin authentication simulated');
+    return { success: true, user: { email, role: 'admin' } };
+  }
+
+  try {
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password
+    });
+
+    if (error) {
+      console.error('❌ Admin authentication failed:', error);
+      return { success: false, error: error.message };
+    }
+
+    console.log('✅ Admin authenticated successfully');
+    return { success: true, user: data.user };
+  } catch (error) {
+    console.error('❌ Admin authentication error:', error);
+    return { success: false, error: 'Authentication failed' };
+  }
+};
+
+// Check if current user is authenticated
+export const getCurrentUser = async () => {
+  if (!isSupabaseConfigured()) {
+    return null;
+  }
+
+  try {
+    const { data: { user }, error } = await supabase.auth.getUser();
+    
+    if (error) {
+      console.error('❌ Error getting current user:', error);
+      return null;
+    }
+
+    return user;
+  } catch (error) {
+    console.error('❌ Error checking authentication:', error);
+    return null;
+  }
+};
+
+// Sign out user
+export const signOut = async () => {
+  if (!isSupabaseConfigured()) {
+    return { success: true };
+  }
+
+  try {
+    const { error } = await supabase.auth.signOut();
+    
+    if (error) {
+      console.error('❌ Sign out failed:', error);
+      return { success: false, error: error.message };
+    }
+
+    console.log('✅ Signed out successfully');
+    return { success: true };
+  } catch (error) {
+    console.error('❌ Sign out error:', error);
+    return { success: false, error: 'Sign out failed' };
+  }
+};

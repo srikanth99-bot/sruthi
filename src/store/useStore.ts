@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { productService } from '../services/productService';
-import { isSupabaseConfigured, initializeSupabase } from '../lib/supabase';
+import { isSupabaseConfigured, initializeSupabase, signInAsAdmin, signOut } from '../lib/supabase';
 import type { 
   Product, 
   CartItem, 
@@ -52,6 +52,7 @@ interface StoreState extends AuthState {
   
   // Auth actions
   login: (credentials: LoginCredentials) => Promise<boolean>;
+  adminLogin: (email: string, password: string) => Promise<boolean>;
   signup: (data: SignupData) => Promise<boolean>;
   logout: () => void;
   updateProfile: (updates: Partial<User>) => void;
@@ -412,10 +413,10 @@ export const useStore = create<StoreState>()(
           get().addNotification({
             type: 'system',
             title: 'Error Creating Product',
-            message: 'Failed to create product. Please try again.',
+            message: error instanceof Error ? error.message : 'Failed to create product. Please try again.',
             isRead: false
           });
-          return null;
+          throw error;
         }
       },
 
@@ -439,10 +440,10 @@ export const useStore = create<StoreState>()(
           get().addNotification({
             type: 'system',
             title: 'Error Updating Product',
-            message: 'Failed to update product. Please try again.',
+            message: error instanceof Error ? error.message : 'Failed to update product. Please try again.',
             isRead: false
           });
-          return null;
+          throw error;
         }
       },
 
@@ -467,10 +468,10 @@ export const useStore = create<StoreState>()(
           get().addNotification({
             type: 'system',
             title: 'Error Deleting Product',
-            message: 'Failed to delete product. Please try again.',
+            message: error instanceof Error ? error.message : 'Failed to delete product. Please try again.',
             isRead: false
           });
-          return false;
+          throw error;
         }
       },
 
@@ -537,6 +538,51 @@ export const useStore = create<StoreState>()(
         }
       },
 
+      adminLogin: async (email: string, password: string) => {
+        try {
+          const result = await signInAsAdmin(email, password);
+          
+          if (result.success) {
+            // Create admin user
+            const adminUser: User = {
+              id: 'admin_1',
+              name: 'Admin User',
+              email: email,
+              phone: '+91 9876543210',
+              role: 'admin',
+              addresses: [],
+              preferences: {
+                newsletter: false,
+                smsUpdates: false,
+                emailUpdates: true,
+                favoriteCategories: []
+              },
+              loyaltyPoints: 0,
+              totalOrders: 0,
+              totalSpent: 0,
+              joinedAt: '2024-01-01T00:00:00Z',
+              lastLoginAt: new Date().toISOString(),
+              isVerified: true,
+              wishlist: []
+            };
+
+            set({
+              isAuthenticated: true,
+              user: adminUser,
+              token: 'admin_token_' + Date.now(),
+              refreshToken: 'admin_refresh_token_' + Date.now()
+            });
+
+            return true;
+          }
+          
+          return false;
+        } catch (error) {
+          console.error('Admin login failed:', error);
+          return false;
+        }
+      },
+
       signup: async (data: SignupData) => {
         try {
           // Simulate API call
@@ -590,7 +636,13 @@ export const useStore = create<StoreState>()(
         }
       },
 
-      logout: () => {
+      logout: async () => {
+        try {
+          await signOut();
+        } catch (error) {
+          console.error('Logout error:', error);
+        }
+        
         set({
           isAuthenticated: false,
           user: null,

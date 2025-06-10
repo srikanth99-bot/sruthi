@@ -1,4 +1,4 @@
-import { supabase, isSupabaseConfigured } from '../lib/supabase';
+import { supabase, isSupabaseConfigured, getCurrentUser } from '../lib/supabase';
 import type { Product } from '../types';
 import { mockProducts } from '../data/mockData';
 
@@ -49,11 +49,10 @@ const ensureAuthenticated = async () => {
     return true; // Skip auth check in demo mode
   }
 
-  const { data: { user }, error } = await supabase.auth.getUser();
+  const user = await getCurrentUser();
   
-  if (error || !user) {
-    console.error('Authentication failed:', error);
-    throw new Error('Authentication required for this operation. Please log in to continue.');
+  if (!user) {
+    throw new Error('Authentication required. Please log in to perform this operation.');
   }
   
   return true;
