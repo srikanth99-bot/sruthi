@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { supabase } from '../../lib/supabase';
 import AdminLogin from './AdminLogin';
 import AdminDashboard from '../../pages/AdminDashboard';
 
@@ -8,37 +9,39 @@ const AdminRoute: React.FC = () => {
 
   useEffect(() => {
     checkAuthStatus();
+    
+    // Listen for auth state changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      setIsAuthenticated(!!session);
+      setIsLoading(false);
+    });
+
+    return () => subscription.unsubscribe();
   }, []);
 
-  const checkAuthStatus = () => {
-    const session = localStorage.getItem('adminSession');
-    const expiry = localStorage.getItem('adminSessionExpiry');
-    
-    if (session && expiry) {
-      const now = Date.now();
-      const expiryTime = parseInt(expiry);
-      
-      if (now < expiryTime) {
-        setIsAuthenticated(true);
-      } else {
-        // Session expired
-        localStorage.removeItem('adminSession');
-        localStorage.removeItem('adminSessionExpiry');
-        setIsAuthenticated(false);
-      }
+  const checkAuthStatus = async () => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      setIsAuthenticated(!!session);
+    } catch (error) {
+      console.error('Error checking auth status:', error);
+      setIsAuthenticated(false);
+    } finally {
+      setIsLoading(false);
     }
-    
-    setIsLoading(false);
   };
 
   const handleLogin = (success: boolean) => {
     setIsAuthenticated(success);
   };
 
-  const handleLogout = () => {
-    localStorage.removeItem('adminSession');
-    localStorage.removeItem('adminSessionExpiry');
-    setIsAuthenticated(false);
+  const handleLogout = async () => {
+    try {
+      await supabase.auth.signOut();
+      setIsAuthenticated(false);
+    } catch (error) {
+      console.error('Error signing out:', error);
+    }
   };
 
   if (isLoading) {

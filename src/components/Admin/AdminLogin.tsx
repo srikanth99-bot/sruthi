@@ -12,7 +12,7 @@ import {
   User,
   Mail
 } from 'lucide-react';
-import { signInAsAdmin } from '../../lib/supabase';
+import { supabase } from '../../lib/supabase';
 
 interface AdminLoginProps {
   onLogin: (success: boolean) => void;
@@ -46,16 +46,12 @@ const AdminLogin: React.FC<AdminLoginProps> = ({ onLogin }) => {
     }
 
     try {
-      const result = await signInAsAdmin(credentials.email, credentials.password);
+      const { data, error: authError } = await supabase.auth.signInWithPassword({
+        email: credentials.email,
+        password: credentials.password,
+      });
 
-      if (result.success) {
-        // Successful login
-        localStorage.removeItem('adminAttempts');
-        localStorage.removeItem('adminLockoutEnd');
-        localStorage.setItem('adminSession', Date.now().toString());
-        localStorage.setItem('adminSessionExpiry', (Date.now() + 8 * 60 * 60 * 1000).toString()); // 8 hours
-        onLogin(true);
-      } else {
+      if (authError) {
         // Failed login
         const newAttempts = attempts + 1;
         setAttempts(newAttempts);
@@ -66,8 +62,13 @@ const AdminLogin: React.FC<AdminLoginProps> = ({ onLogin }) => {
           localStorage.setItem('adminLockoutEnd', lockoutEnd.toString());
           setError(`Too many failed attempts. Account locked for 15 minutes.`);
         } else {
-          setError(result.error || `Invalid credentials. ${MAX_ATTEMPTS - newAttempts} attempts remaining.`);
+          setError(authError.message || `Invalid credentials. ${MAX_ATTEMPTS - newAttempts} attempts remaining.`);
         }
+      } else if (data.user) {
+        // Successful login
+        localStorage.removeItem('adminAttempts');
+        localStorage.removeItem('adminLockoutEnd');
+        onLogin(true);
       }
     } catch (error) {
       setError('Login failed. Please try again.');
