@@ -1,5 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import { productService } from '../services/productService';
+import { isSupabaseConfigured } from '../lib/supabase';
 import type { 
   Product, 
   CartItem, 
@@ -43,6 +45,9 @@ interface StoreState extends AuthState {
   
   // Notifications
   notifications: Notification[];
+  
+  // Loading states
+  isLoadingProducts: boolean;
   
   // Auth actions
   login: (credentials: LoginCredentials) => Promise<boolean>;
@@ -94,7 +99,13 @@ interface StoreState extends AuthState {
   clearNotifications: () => void;
   getUnreadNotificationCount: () => number;
   
+  // Product actions
+  loadProducts: () => Promise<void>;
+  createProduct: (product: Partial<Product>) => Promise<Product | null>;
+  updateProduct: (id: string, updates: Partial<Product>) => Promise<Product | null>;
+  deleteProduct: (id: string) => Promise<boolean>;
   setProducts: (products: Product[]) => void;
+  
   setCategories: (categories: Category[]) => void;
   addCategory: (category: Category) => void;
   updateCategory: (categoryId: string, updates: Partial<Category>) => void;
@@ -142,6 +153,7 @@ export const useStore = create<StoreState>()(
       cartItems: [],
       cartOpen: false,
       products: [],
+      isLoadingProducts: false,
       categories: [
         {
           id: 'cat_1',
@@ -161,45 +173,11 @@ export const useStore = create<StoreState>()(
         },
         {
           id: 'cat_2',
-          name: 'Cotton Sarees',
-          slug: 'cotton-sarees',
-          image: 'https://images.pexels.com/photos/8193085/pexels-photo-8193085.jpeg',
-          description: 'Comfortable cotton sarees for daily wear',
-          autoDescription: 'Comfortable and breathable cotton sarees perfect for daily wear. Made from premium cotton with beautiful traditional designs and modern comfort.',
-          productCount: 0,
-          isActive: true,
-          createdAt: '2024-01-01T00:00:00Z',
-          updatedAt: '2024-01-01T00:00:00Z',
-          icon: '🌿',
-          color: '#10B981',
-          sortOrder: 1,
-          level: 1,
-          parentId: 'cat_1'
-        },
-        {
-          id: 'cat_3',
-          name: 'Handloom Cotton',
-          slug: 'handloom-cotton',
-          image: 'https://images.pexels.com/photos/8193085/pexels-photo-8193085.jpeg',
-          description: 'Authentic handloom cotton sarees',
-          autoDescription: 'Authentic handloom cotton sarees woven by skilled artisans using traditional techniques. Each piece is unique with natural variations that add to its charm and authenticity.',
-          productCount: 0,
-          isActive: true,
-          createdAt: '2024-01-01T00:00:00Z',
-          updatedAt: '2024-01-01T00:00:00Z',
-          icon: '🧵',
-          color: '#F59E0B',
-          sortOrder: 1,
-          level: 2,
-          parentId: 'cat_2'
-        },
-        {
-          id: 'cat_4',
-          name: 'Sets',
-          slug: 'sets',
+          name: 'Frocks',
+          slug: 'frocks',
           image: 'https://images.pexels.com/photos/5560021/pexels-photo-5560021.jpeg',
-          description: 'Complete ethnic sets',
-          autoDescription: 'Complete ethnic sets featuring coordinated pieces for a perfect traditional look. Includes top, bottom, and dupatta with matching designs and colors.',
+          description: 'Comfortable and stylish frocks',
+          autoDescription: 'Comfortable and stylish frocks perfect for daily wear and special occasions. Made with premium fabrics and modern designs.',
           productCount: 0,
           isActive: true,
           createdAt: '2024-01-01T00:00:00Z',
@@ -210,36 +188,67 @@ export const useStore = create<StoreState>()(
           level: 0
         },
         {
-          id: 'cat_5',
-          name: 'Single Ikkat Sets',
-          slug: 'single-ikkat-sets',
-          image: 'https://images.pexels.com/photos/5560021/pexels-photo-5560021.jpeg',
-          description: 'Single ikkat pattern sets',
-          autoDescription: 'Beautiful single ikkat sets featuring traditional resist-dyeing technique. These sets showcase the classic ikkat patterns with modern cuts and comfortable fits.',
+          id: 'cat_3',
+          name: 'Dress Materials',
+          slug: 'dress-materials',
+          image: 'https://images.pexels.com/photos/7679720/pexels-photo-7679720.jpeg',
+          description: 'Premium dress materials',
+          autoDescription: 'Premium dress materials with matching accessories. Perfect for custom tailoring and creating your unique style.',
           productCount: 0,
           isActive: true,
           createdAt: '2024-01-01T00:00:00Z',
           updatedAt: '2024-01-01T00:00:00Z',
-          icon: '🎨',
-          color: '#06B6D4',
-          sortOrder: 1,
-          level: 1,
-          parentId: 'cat_4'
+          icon: '🧵',
+          color: '#10B981',
+          sortOrder: 3,
+          level: 0
+        },
+        {
+          id: 'cat_4',
+          name: 'Kurtas',
+          slug: 'kurtas',
+          image: 'https://images.pexels.com/photos/8100784/pexels-photo-8100784.jpeg',
+          description: 'Elegant kurtas for all occasions',
+          autoDescription: 'Elegant kurtas designed for comfort and style. Perfect for office wear, casual outings, and semi-formal occasions.',
+          productCount: 0,
+          isActive: true,
+          createdAt: '2024-01-01T00:00:00Z',
+          updatedAt: '2024-01-01T00:00:00Z',
+          icon: '👘',
+          color: '#F59E0B',
+          sortOrder: 4,
+          level: 0
+        },
+        {
+          id: 'cat_5',
+          name: 'Blouses',
+          slug: 'blouses',
+          image: 'https://images.pexels.com/photos/8100786/pexels-photo-8100786.jpeg',
+          description: 'Beautiful blouses to pair with sarees',
+          autoDescription: 'Beautiful blouses crafted to perfectly complement your sarees. Available in various designs, sizes, and colors.',
+          productCount: 0,
+          isActive: true,
+          createdAt: '2024-01-01T00:00:00Z',
+          updatedAt: '2024-01-01T00:00:00Z',
+          icon: '👕',
+          color: '#8B5CF6',
+          sortOrder: 5,
+          level: 0
         },
         {
           id: 'cat_6',
-          name: 'Stitched Dresses',
-          slug: 'stitched-dresses',
-          image: 'https://images.pexels.com/photos/8100784/pexels-photo-8100784.jpeg',
-          description: 'Ready-to-wear stitched dresses',
-          autoDescription: 'Ready-to-wear stitched dresses in various sizes and styles. Comfortable, well-fitted, and perfect for modern women who appreciate traditional aesthetics with contemporary comfort.',
+          name: 'Lehengas',
+          slug: 'lehengas',
+          image: 'https://images.pexels.com/photos/8100783/pexels-photo-8100783.jpeg',
+          description: 'Stunning lehengas for special occasions',
+          autoDescription: 'Stunning lehengas perfect for weddings, festivals, and special celebrations. Complete sets with blouse, lehenga, and dupatta.',
           productCount: 0,
           isActive: true,
           createdAt: '2024-01-01T00:00:00Z',
           updatedAt: '2024-01-01T00:00:00Z',
-          icon: '👗',
-          color: '#8B5CF6',
-          sortOrder: 3,
+          icon: '👑',
+          color: '#DC2626',
+          sortOrder: 6,
           level: 0
         }
       ],
@@ -269,34 +278,6 @@ export const useStore = create<StoreState>()(
             showCountdown: false,
             enableSpecialOffers: true
           }
-        },
-        {
-          id: 'theme_2',
-          name: 'Summer Collection',
-          slug: 'summer-collection',
-          description: 'Light and breezy designs for summer comfort',
-          image: 'https://images.pexels.com/photos/5560021/pexels-photo-5560021.jpeg',
-          bannerImage: 'https://images.pexels.com/photos/5560021/pexels-photo-5560021.jpeg',
-          icon: '☀️',
-          colors: {
-            primary: '#06B6D4',
-            secondary: '#10B981',
-            accent: '#F59E0B',
-            background: '#F0F9FF',
-            text: '#0F172A'
-          },
-          isActive: false,
-          isDefault: false,
-          startDate: '2024-04-01T00:00:00Z',
-          endDate: '2024-06-30T23:59:59Z',
-          createdAt: '2024-01-01T00:00:00Z',
-          updatedAt: '2024-01-01T00:00:00Z',
-          sortOrder: 2,
-          settings: {
-            showBanner: true,
-            showCountdown: true,
-            enableSpecialOffers: true
-          }
         }
       ],
       stories: [
@@ -310,45 +291,6 @@ export const useStore = create<StoreState>()(
           sortOrder: 1,
           linkType: 'category',
           linkValue: 'new-arrivals',
-          createdAt: '2024-01-01T00:00:00Z',
-          updatedAt: '2024-01-01T00:00:00Z'
-        },
-        {
-          id: 'story_2',
-          title: 'Trending Now',
-          subtitle: 'Hot Picks',
-          image: 'https://images.pexels.com/photos/5560021/pexels-photo-5560021.jpeg',
-          gradient: 'from-blue-600 to-cyan-600',
-          isActive: true,
-          sortOrder: 2,
-          linkType: 'collection',
-          linkValue: 'trending',
-          createdAt: '2024-01-01T00:00:00Z',
-          updatedAt: '2024-01-01T00:00:00Z'
-        },
-        {
-          id: 'story_3',
-          title: 'Best Sellers',
-          subtitle: 'Top Rated',
-          image: 'https://images.pexels.com/photos/7679720/pexels-photo-7679720.jpeg',
-          gradient: 'from-orange-600 to-red-600',
-          isActive: true,
-          sortOrder: 3,
-          linkType: 'collection',
-          linkValue: 'best-sellers',
-          createdAt: '2024-01-01T00:00:00Z',
-          updatedAt: '2024-01-01T00:00:00Z'
-        },
-        {
-          id: 'story_4',
-          title: 'Premium',
-          subtitle: 'Luxury Line',
-          image: 'https://images.pexels.com/photos/8100784/pexels-photo-8100784.jpeg',
-          gradient: 'from-emerald-600 to-teal-600',
-          isActive: true,
-          sortOrder: 4,
-          linkType: 'category',
-          linkValue: 'premium',
           createdAt: '2024-01-01T00:00:00Z',
           updatedAt: '2024-01-01T00:00:00Z'
         }
@@ -374,34 +316,7 @@ export const useStore = create<StoreState>()(
           height: 'medium',
           position: 'top',
           showIcon: true,
-          icon: '🔥',
-          discount: {
-            percentage: 70,
-            originalText: 'HOT DEAL',
-            highlightText: 'Up to 70% OFF'
-          }
-        },
-        {
-          id: 'banner_2',
-          title: 'New Arrivals',
-          subtitle: 'FRESH COLLECTION',
-          description: 'Latest handwoven designs just arrived',
-          image: 'https://images.pexels.com/photos/8193085/pexels-photo-8193085.jpeg',
-          gradient: 'from-emerald-500 to-teal-600',
-          textColor: 'text-white',
-          buttonText: 'Explore Now',
-          buttonColor: 'bg-white text-emerald-600',
-          isActive: false,
-          sortOrder: 2,
-          linkType: 'category',
-          linkValue: 'new-arrivals',
-          createdAt: '2024-01-01T00:00:00Z',
-          updatedAt: '2024-01-01T00:00:00Z',
-          bannerType: 'hero',
-          height: 'large',
-          position: 'top',
-          showIcon: true,
-          icon: '✨'
+          icon: '🔥'
         }
       ],
       filters: {
@@ -416,61 +331,123 @@ export const useStore = create<StoreState>()(
       filterDrawerOpen: false,
       orders: [],
       selectedOrder: null,
-      payments: [
-        // Mock payment data for demonstration
-        {
-          id: 'pay_1',
-          orderId: 'ORD001',
-          customerName: 'Priya Sharma',
-          customerEmail: 'priya@example.com',
-          customerPhone: '+91 9876543210',
-          amount: 4500,
-          currency: 'INR',
-          status: 'captured',
-          method: 'upi',
-          vpa: 'priya@paytm',
-          razorpayOrderId: 'order_razorpay_1',
-          razorpayPaymentId: 'pay_razorpay_1',
-          razorpaySignature: 'signature_1',
-          fee: 45,
-          tax: 8.1,
-          createdAt: '2024-01-15T10:30:00Z',
-          authorizedAt: '2024-01-15T10:31:00Z',
-          capturedAt: '2024-01-15T10:31:30Z',
-          receipt: 'receipt_1',
-          notes: {
-            orderId: 'ORD001',
-            customerEmail: 'priya@example.com'
-          }
-        },
-        {
-          id: 'pay_2',
-          orderId: 'ORD002',
-          customerName: 'Anjali Reddy',
-          customerEmail: 'anjali@example.com',
-          customerPhone: '+91 9876543211',
-          amount: 2400,
-          currency: 'INR',
-          status: 'captured',
-          method: 'card',
-          cardType: 'credit',
-          cardNetwork: 'Visa',
-          razorpayOrderId: 'order_razorpay_2',
-          razorpayPaymentId: 'pay_razorpay_2',
-          razorpaySignature: 'signature_2',
-          fee: 24,
-          tax: 4.32,
-          createdAt: '2024-01-14T15:45:00Z',
-          authorizedAt: '2024-01-14T15:46:00Z',
-          capturedAt: '2024-01-14T15:46:30Z',
-          receipt: 'receipt_2',
-          notes: {
-            orderId: 'ORD002',
-            customerEmail: 'anjali@example.com'
-          }
-        }
-      ],
+      payments: [],
       notifications: [],
+
+      // Product actions
+      loadProducts: async () => {
+        set({ isLoadingProducts: true });
+        try {
+          const products = await productService.getProducts();
+          set({ products, isLoadingProducts: false });
+          
+          // Show connection status
+          if (isSupabaseConfigured()) {
+            get().addNotification({
+              type: 'system',
+              title: 'Database Connected',
+              message: `Loaded ${products.length} products from Supabase database`,
+              isRead: false
+            });
+          } else {
+            get().addNotification({
+              type: 'system',
+              title: 'Using Demo Data',
+              message: 'Connect to Supabase to enable real database functionality',
+              isRead: false
+            });
+          }
+        } catch (error) {
+          console.error('Error loading products:', error);
+          set({ isLoadingProducts: false });
+          get().addNotification({
+            type: 'system',
+            title: 'Error Loading Products',
+            message: 'Failed to load products from database',
+            isRead: false
+          });
+        }
+      },
+
+      createProduct: async (product: Partial<Product>) => {
+        try {
+          const newProduct = await productService.createProduct(product);
+          if (newProduct) {
+            set({ products: [...get().products, newProduct] });
+            get().addNotification({
+              type: 'system',
+              title: 'Product Created',
+              message: `${newProduct.name} has been added successfully`,
+              isRead: false
+            });
+          }
+          return newProduct;
+        } catch (error) {
+          console.error('Error creating product:', error);
+          get().addNotification({
+            type: 'system',
+            title: 'Error Creating Product',
+            message: 'Failed to create product. Please try again.',
+            isRead: false
+          });
+          return null;
+        }
+      },
+
+      updateProduct: async (id: string, updates: Partial<Product>) => {
+        try {
+          const updatedProduct = await productService.updateProduct(id, updates);
+          if (updatedProduct) {
+            set({
+              products: get().products.map(p => p.id === id ? updatedProduct : p)
+            });
+            get().addNotification({
+              type: 'system',
+              title: 'Product Updated',
+              message: `${updatedProduct.name} has been updated successfully`,
+              isRead: false
+            });
+          }
+          return updatedProduct;
+        } catch (error) {
+          console.error('Error updating product:', error);
+          get().addNotification({
+            type: 'system',
+            title: 'Error Updating Product',
+            message: 'Failed to update product. Please try again.',
+            isRead: false
+          });
+          return null;
+        }
+      },
+
+      deleteProduct: async (id: string) => {
+        try {
+          const success = await productService.deleteProduct(id);
+          if (success) {
+            const product = get().products.find(p => p.id === id);
+            set({
+              products: get().products.filter(p => p.id !== id)
+            });
+            get().addNotification({
+              type: 'system',
+              title: 'Product Deleted',
+              message: `${product?.name || 'Product'} has been deleted successfully`,
+              isRead: false
+            });
+          }
+          return success;
+        } catch (error) {
+          console.error('Error deleting product:', error);
+          get().addNotification({
+            type: 'system',
+            title: 'Error Deleting Product',
+            message: 'Failed to delete product. Please try again.',
+            isRead: false
+          });
+          return false;
+        }
+      },
 
       // Auth actions
       login: async (credentials: LoginCredentials) => {
@@ -1073,7 +1050,6 @@ export const useStore = create<StoreState>()(
         orders: state.orders,
         payments: state.payments,
         notifications: state.notifications,
-        products: state.products,
       }),
     }
   )

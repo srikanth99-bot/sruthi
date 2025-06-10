@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Header from './components/Layout/Header';
 import BottomNav from './components/Layout/BottomNav';
@@ -14,6 +14,7 @@ import AdminRoute from './components/Admin/AdminRoute';
 import LoginPage from './pages/LoginPage';
 import OrderTrackingPage from './pages/OrderTrackingPage';
 import { useStore } from './store/useStore';
+import { isSupabaseConfigured } from './lib/supabase';
 import type { Product } from './types';
 
 function App() {
@@ -22,14 +23,12 @@ function App() {
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [completedOrderId, setCompletedOrderId] = useState<string>('');
   const [trackingOrderId, setTrackingOrderId] = useState<string>('');
-  const { setProducts, isAuthenticated } = useStore();
+  const { loadProducts, isAuthenticated, isLoadingProducts } = useStore();
 
-  // Initialize with mock data
-  React.useEffect(() => {
-    import('./data/mockData').then(({ mockProducts }) => {
-      setProducts(mockProducts);
-    });
-  }, [setProducts]);
+  // Load products on app start
+  useEffect(() => {
+    loadProducts();
+  }, [loadProducts]);
 
   // Check if current path is admin
   const isAdminRoute = window.location.pathname === '/admin';
@@ -119,6 +118,24 @@ function App() {
     setTrackingOrderId('');
   };
 
+  // Show loading screen while products are loading
+  if (isLoadingProducts) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-purple-600 mx-auto mb-4"></div>
+          <h2 className="text-xl font-semibold text-gray-900 mb-2">Loading Products...</h2>
+          <p className="text-gray-600">
+            {isSupabaseConfigured() 
+              ? 'Connecting to database...' 
+              : 'Loading demo data...'
+            }
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Only show header on desktop */}
@@ -132,7 +149,7 @@ function App() {
       <main className="pb-20 md:pb-0">
         <AnimatePresence mode="wait">
           {currentPage === 'home' && (
-            <HomePage key="home\" onCategoryClick={handleCategoryClick} />
+            <HomePage key="home" onCategoryClick={handleCategoryClick} />
           )}
           {currentPage === 'collection' && (
             <CollectionPage 

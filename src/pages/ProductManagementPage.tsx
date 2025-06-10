@@ -36,11 +36,13 @@ import {
   Ruler,
   Info,
   ToggleLeft,
-  ToggleRight
+  ToggleRight,
+  Loader
 } from 'lucide-react';
 import { useStore } from '../store/useStore';
 import DragDropImageUpload from '../components/ImageUpload/DragDropImageUpload';
 import BulkUploadModal from '../components/BulkUpload/BulkUploadModal';
+import { isSupabaseConfigured } from '../lib/supabase';
 import type { Product } from '../types';
 
 interface ProductManagementPageProps {
@@ -51,8 +53,12 @@ const ProductManagementPage: React.FC<ProductManagementPageProps> = ({ onBack })
   const { 
     products, 
     categories,
-    setProducts,
-    addToCart
+    createProduct,
+    updateProduct,
+    deleteProduct,
+    addToCart,
+    loadProducts,
+    isLoadingProducts
   } = useStore();
   
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
@@ -64,6 +70,7 @@ const ProductManagementPage: React.FC<ProductManagementPageProps> = ({ onBack })
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [selectedProducts, setSelectedProducts] = useState<Set<string>>(new Set());
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   
   const [formData, setFormData] = useState<Partial<Product>>({
     name: '',
@@ -98,45 +105,20 @@ const ProductManagementPage: React.FC<ProductManagementPageProps> = ({ onBack })
     return matchesSearch && matchesCategory && matchesStock;
   });
 
-  // Quick toggle stock status
-  const toggleProductStock = (productId: string) => {
-    const updatedProducts = products.map(product =>
-      product.id === productId 
-        ? { ...product, inStock: !product.inStock, updatedAt: new Date().toISOString() }
-        : product
-    );
-    setProducts(updatedProducts);
-  };
-
-  // Delete single product
-  const deleteProduct = (productId: string) => {
-    const updatedProducts = products.filter(product => product.id !== productId);
-    setProducts(updatedProducts);
-    setShowDeleteConfirm(null);
-  };
-
   // Bulk delete selected products
-  const bulkDeleteProducts = () => {
+  const bulkDeleteProducts = async () => {
     if (selectedProducts.size === 0) return;
     
     if (window.confirm(`Are you sure you want to delete ${selectedProducts.size} selected products? This action cannot be undone.`)) {
-      const updatedProducts = products.filter(product => !selectedProducts.has(product.id));
-      setProducts(updatedProducts);
-      setSelectedProducts(new Set());
+      try {
+        for (const productId of selectedProducts) {
+          await deleteProduct(productId);
+        }
+        setSelectedProducts(new Set());
+      } catch (error) {
+        console.error('Error deleting products:', error);
+      }
     }
-  };
-
-  // Bulk toggle stock status
-  const bulkToggleStock = (inStock: boolean) => {
-    if (selectedProducts.size === 0) return;
-    
-    const updatedProducts = products.map(product =>
-      selectedProducts.has(product.id)
-        ? { ...product, inStock, updatedAt: new Date().toISOString() }
-        : product
-    );
-    setProducts(updatedProducts);
-    setSelectedProducts(new Set());
   };
 
   // Toggle product selection
@@ -159,44 +141,27 @@ const ProductManagementPage: React.FC<ProductManagementPageProps> = ({ onBack })
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!formData.name || !formData.price || !formData.category) {
       return;
     }
 
-    const productData: Product = {
-      id: editingProduct?.id || `prod_${Date.now()}`,
-      name: formData.name!,
-      price: formData.price!,
-      originalPrice: formData.originalPrice || undefined,
-      category: formData.category!,
-      description: formData.description || '',
-      images: formData.images || [],
-      sizes: formData.sizes || [],
-      colors: formData.colors || [],
-      inStock: formData.inStock ?? true,
-      featured: formData.featured ?? false,
-      rating: formData.rating || 4.5,
-      reviewCount: formData.reviewCount || 0,
-      tags: formData.tags || [],
-      supportsFeedingFriendly: formData.supportsFeedingFriendly || false,
-      isStitchedDress: formData.isStitchedDress || false,
-      createdAt: editingProduct?.createdAt || new Date().toISOString(),
-      updatedAt: new Date().toISOString()
-    };
+    setIsSubmitting(true);
 
-    if (editingProduct) {
-      const updatedProducts = products.map(p => 
-        p.id === editingProduct.id ? productData : p
-      );
-      setProducts(updatedProducts);
-    } else {
-      setProducts([...products, productData]);
+    try {
+      if (editingProduct) {
+        await updateProduct(editingProduct.id, formData);
+      } else {
+        await createProduct(formData);
+      }
+      resetForm();
+    } catch (error) {
+      console.error('Error saving product:', error);
+    } finally {
+      setIsSubmitting(false);
     }
-
-    resetForm();
   };
 
   const resetForm = () => {
@@ -225,6 +190,15 @@ const ProductManagementPage: React.FC<ProductManagementPageProps> = ({ onBack })
     setFormData(product);
     setEditingProduct(product);
     setShowForm(true);
+  };
+
+  const handleDelete = async (productId: string) => {
+    try {
+      await deleteProduct(productId);
+      setShowDeleteConfirm(null);
+    } catch (error) {
+      console.error('Error deleting product:', error);
+    }
   };
 
   const getStockStatusColor = (inStock: boolean) => {
@@ -266,12 +240,7 @@ const ProductManagementPage: React.FC<ProductManagementPageProps> = ({ onBack })
 
             {/* Stock Status Badge */}
             <div className="absolute top-3 right-3">
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={() => toggleProductStock(product.id)}
-                className={`px-3 py-1 rounded-full text-xs font-bold border-2 transition-all ${getStockStatusColor(product.inStock)}`}
-              >
+              <span className={`px-3 py-1 rounded-full text-xs font-bold border-2 transition-all ${getStockStatusColor(product.inStock)}`}>
                 {product.inStock ? (
                   <div className="flex items-center space-x-1">
                     <div className="w-2 h-2 bg-green-500 rounded-full"></div>
@@ -283,7 +252,7 @@ const ProductManagementPage: React.FC<ProductManagementPageProps> = ({ onBack })
                     <span>Out of Stock</span>
                   </div>
                 )}
-              </motion.button>
+              </span>
             </div>
 
             {/* Quick Actions Overlay */}
@@ -380,7 +349,7 @@ const ProductManagementPage: React.FC<ProductManagementPageProps> = ({ onBack })
     </div>
   );
 
-  const renderProductList = () => (
+  const renderListView = () => (
     <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
       <div className="overflow-x-auto">
         <table className="w-full">
@@ -455,12 +424,7 @@ const ProductManagementPage: React.FC<ProductManagementPageProps> = ({ onBack })
                   </div>
                 </td>
                 <td className="px-6 py-4">
-                  <motion.button
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    onClick={() => toggleProductStock(product.id)}
-                    className={`px-3 py-1 rounded-full text-xs font-bold border-2 transition-all ${getStockStatusColor(product.inStock)}`}
-                  >
+                  <span className={`px-3 py-1 rounded-full text-xs font-bold border-2 transition-all ${getStockStatusColor(product.inStock)}`}>
                     {product.inStock ? (
                       <div className="flex items-center space-x-1">
                         <ToggleRight className="h-3 w-3" />
@@ -472,7 +436,7 @@ const ProductManagementPage: React.FC<ProductManagementPageProps> = ({ onBack })
                         <span>Out of Stock</span>
                       </div>
                     )}
-                  </motion.button>
+                  </span>
                 </td>
                 <td className="px-6 py-4">
                   <div className="flex items-center space-x-1">
@@ -528,6 +492,9 @@ const ProductManagementPage: React.FC<ProductManagementPageProps> = ({ onBack })
                   <h1 className="text-2xl font-bold text-gray-900">Product Management</h1>
                   <p className="text-sm text-gray-500">
                     {products.length} products • {products.filter(p => p.inStock).length} in stock • {selectedProducts.size} selected
+                    {!isSupabaseConfigured() && (
+                      <span className="text-orange-600 ml-2">• Demo Mode</span>
+                    )}
                   </p>
                 </div>
               </div>
@@ -542,20 +509,6 @@ const ProductManagementPage: React.FC<ProductManagementPageProps> = ({ onBack })
                   </span>
                   <div className="flex items-center space-x-1">
                     <button
-                      onClick={() => bulkToggleStock(true)}
-                      className="p-1 text-green-600 hover:bg-green-50 rounded-lg transition-colors"
-                      title="Mark as Available"
-                    >
-                      <ToggleRight className="h-4 w-4" />
-                    </button>
-                    <button
-                      onClick={() => bulkToggleStock(false)}
-                      className="p-1 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                      title="Mark as Out of Stock"
-                    >
-                      <ToggleLeft className="h-4 w-4" />
-                    </button>
-                    <button
                       onClick={bulkDeleteProducts}
                       className="p-1 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                       title="Delete Selected"
@@ -565,6 +518,22 @@ const ProductManagementPage: React.FC<ProductManagementPageProps> = ({ onBack })
                   </div>
                 </div>
               )}
+
+              {/* Refresh Button */}
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={loadProducts}
+                disabled={isLoadingProducts}
+                className="flex items-center space-x-2 bg-gray-100 text-gray-700 px-4 py-2 rounded-xl hover:bg-gray-200 transition-colors disabled:opacity-50"
+              >
+                {isLoadingProducts ? (
+                  <Loader className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Download className="h-4 w-4" />
+                )}
+                <span>Refresh</span>
+              </motion.button>
 
               {/* Add Product Button */}
               <motion.button
@@ -593,6 +562,21 @@ const ProductManagementPage: React.FC<ProductManagementPageProps> = ({ onBack })
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Connection Status */}
+        {!isSupabaseConfigured() && (
+          <div className="mb-6 bg-orange-50 border border-orange-200 rounded-xl p-4">
+            <div className="flex items-center space-x-3">
+              <AlertCircle className="h-5 w-5 text-orange-600" />
+              <div>
+                <h4 className="font-semibold text-orange-800">Demo Mode Active</h4>
+                <p className="text-orange-700 text-sm">
+                  Connect to Supabase to enable real database functionality. Products added in demo mode won't persist.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Filters */}
         <div className="mb-8 bg-white rounded-2xl shadow-lg border border-gray-100 p-6">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -658,7 +642,7 @@ const ProductManagementPage: React.FC<ProductManagementPageProps> = ({ onBack })
         {/* Products Display */}
         <div className="space-y-6">
           {filteredProducts.length > 0 ? (
-            viewMode === 'grid' ? renderProductGrid() : renderProductList()
+            viewMode === 'grid' ? renderProductGrid() : renderListView()
           ) : (
             <div className="text-center py-12">
               <Package className="h-16 w-16 text-gray-300 mx-auto mb-4" />
@@ -721,7 +705,7 @@ const ProductManagementPage: React.FC<ProductManagementPageProps> = ({ onBack })
                     Cancel
                   </button>
                   <button
-                    onClick={() => deleteProduct(showDeleteConfirm)}
+                    onClick={() => handleDelete(showDeleteConfirm)}
                     className="flex-1 px-4 py-2 bg-red-600 text-white rounded-xl hover:bg-red-700 transition-colors"
                   >
                     Delete
@@ -1026,10 +1010,20 @@ const ProductManagementPage: React.FC<ProductManagementPageProps> = ({ onBack })
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
                     type="submit"
-                    className="flex items-center space-x-2 bg-purple-600 text-white px-8 py-3 rounded-xl hover:bg-purple-700 transition-colors"
+                    disabled={isSubmitting}
+                    className="flex items-center space-x-2 bg-purple-600 text-white px-8 py-3 rounded-xl hover:bg-purple-700 transition-colors disabled:opacity-50"
                   >
-                    <Save className="h-4 w-4" />
-                    <span>{editingProduct ? 'Update Product' : 'Create Product'}</span>
+                    {isSubmitting ? (
+                      <>
+                        <Loader className="h-4 w-4 animate-spin" />
+                        <span>{editingProduct ? 'Updating...' : 'Creating...'}</span>
+                      </>
+                    ) : (
+                      <>
+                        <Save className="h-4 w-4" />
+                        <span>{editingProduct ? 'Update Product' : 'Create Product'}</span>
+                      </>
+                    )}
                   </motion.button>
                   <button
                     type="button"
