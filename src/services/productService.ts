@@ -43,6 +43,26 @@ const transformProductToDb = (product: Partial<Product>) => ({
   is_stitched_dress: product.isStitchedDress || false
 });
 
+// Ensure user is authenticated for write operations
+const ensureAuthenticated = async () => {
+  if (!isSupabaseConfigured()) {
+    return true; // Skip auth check in demo mode
+  }
+
+  const { data: { user }, error } = await supabase.auth.getUser();
+  
+  if (error || !user) {
+    // Try to sign in anonymously for admin operations
+    const { error: signInError } = await supabase.auth.signInAnonymously();
+    if (signInError) {
+      console.error('Authentication failed:', signInError);
+      throw new Error('Authentication required for this operation');
+    }
+  }
+  
+  return true;
+};
+
 export const productService = {
   // Get all products
   async getProducts(): Promise<Product[]> {
@@ -126,6 +146,9 @@ export const productService = {
     }
 
     try {
+      // Ensure user is authenticated
+      await ensureAuthenticated();
+      
       console.log('💾 Creating product in Supabase...', product.name);
       const { data, error } = await supabase
         .from('products')
@@ -154,6 +177,9 @@ export const productService = {
     }
 
     try {
+      // Ensure user is authenticated
+      await ensureAuthenticated();
+      
       console.log('📝 Updating product in Supabase...', id);
       const { data, error } = await supabase
         .from('products')
@@ -183,6 +209,9 @@ export const productService = {
     }
 
     try {
+      // Ensure user is authenticated
+      await ensureAuthenticated();
+      
       console.log('🗑️  Deleting product from Supabase...', id);
       const { error } = await supabase
         .from('products')
