@@ -35,6 +35,10 @@ const AdminLogin: React.FC<AdminLoginProps> = ({ onLogin }) => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Prevent multiple submissions
+    if (isLoading) return;
+    
     setIsLoading(true);
     setError('');
 
@@ -47,31 +51,27 @@ const AdminLogin: React.FC<AdminLoginProps> = ({ onLogin }) => {
       return;
     }
 
+    // Validate input
+    if (!credentials.email || !credentials.password) {
+      setError('Please enter both email and password.');
+      setIsLoading(false);
+      return;
+    }
+
     try {
-      let success = false;
-
-      if (isSupabaseConfigured()) {
-        // Use Supabase authentication
-        success = await adminLogin(credentials.email, credentials.password);
-      } else {
-        // Demo mode authentication
-        const demoCredentials = {
-          email: 'admin@looom.shop',
-          password: 'admin123'
-        };
-
-        if (credentials.email === demoCredentials.email && credentials.password === demoCredentials.password) {
-          success = true;
-        }
-      }
+      console.log('🔐 Attempting admin login...');
+      const success = await adminLogin(credentials.email, credentials.password);
       
       if (success) {
         // Successful login
+        console.log('✅ Admin login successful');
         localStorage.removeItem('adminAttempts');
         localStorage.removeItem('adminLockoutEnd');
+        setError('');
         onLogin(true);
       } else {
         // Failed login
+        console.log('❌ Admin login failed');
         const newAttempts = attempts + 1;
         setAttempts(newAttempts);
         localStorage.setItem('adminAttempts', newAttempts.toString());
@@ -85,6 +85,7 @@ const AdminLogin: React.FC<AdminLoginProps> = ({ onLogin }) => {
         }
       }
     } catch (error) {
+      console.error('❌ Login error:', error);
       setError('Login failed. Please try again.');
     } finally {
       setIsLoading(false);
@@ -163,6 +164,7 @@ const AdminLogin: React.FC<AdminLoginProps> = ({ onLogin }) => {
                   className="w-full pl-12 pr-4 py-4 bg-white/10 border border-white/20 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent backdrop-blur-sm"
                   placeholder="Enter your email"
                   required
+                  disabled={isLoading}
                 />
               </div>
             </div>
@@ -181,11 +183,13 @@ const AdminLogin: React.FC<AdminLoginProps> = ({ onLogin }) => {
                   className="w-full pl-12 pr-12 py-4 bg-white/10 border border-white/20 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent backdrop-blur-sm"
                   placeholder="Enter password"
                   required
+                  disabled={isLoading}
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white"
+                  className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white transition-colors"
+                  disabled={isLoading}
                 >
                   {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                 </button>
@@ -194,8 +198,8 @@ const AdminLogin: React.FC<AdminLoginProps> = ({ onLogin }) => {
 
             {/* Submit Button */}
             <motion.button
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
+              whileHover={!isLoading ? { scale: 1.02 } : {}}
+              whileTap={!isLoading ? { scale: 0.98 } : {}}
               type="submit"
               disabled={isLoading || attempts >= MAX_ATTEMPTS}
               className="w-full bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-bold py-4 rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
