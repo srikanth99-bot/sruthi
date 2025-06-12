@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { supabase } from '../../lib/supabase';
+import { supabase, isSupabaseConfigured } from '../../lib/supabase';
 import AdminLogin from './AdminLogin';
 import AdminDashboard from '../../pages/AdminDashboard';
 
@@ -10,19 +10,42 @@ const AdminRoute: React.FC = () => {
   useEffect(() => {
     checkAuthStatus();
     
-    // Listen for auth state changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      setIsAuthenticated(!!session);
-      setIsLoading(false);
-    });
+    // Only listen for auth state changes if Supabase is configured
+    if (isSupabaseConfigured()) {
+      const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+        setIsAuthenticated(!!session);
+        setIsLoading(false);
+      });
 
-    return () => subscription.unsubscribe();
+      return () => subscription.unsubscribe();
+    } else {
+      // For demo mode, check localStorage for admin session
+      const adminSession = localStorage.getItem('adminSession');
+      const sessionExpiry = localStorage.getItem('adminSessionExpiry');
+      
+      if (adminSession && sessionExpiry && Date.now() < parseInt(sessionExpiry)) {
+        setIsAuthenticated(true);
+      }
+      setIsLoading(false);
+    }
   }, []);
 
   const checkAuthStatus = async () => {
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      setIsAuthenticated(!!session);
+      if (isSupabaseConfigured()) {
+        const { data: { session } } = await supabase.auth.getSession();
+        setIsAuthenticated(!!session);
+      } else {
+        // Demo mode authentication check
+        const adminSession = localStorage.getItem('adminSession');
+        const sessionExpiry = localStorage.getItem('adminSessionExpiry');
+        
+        if (adminSession && sessionExpiry && Date.now() < parseInt(sessionExpiry)) {
+          setIsAuthenticated(true);
+        } else {
+          setIsAuthenticated(false);
+        }
+      }
     } catch (error) {
       console.error('Error checking auth status:', error);
       setIsAuthenticated(false);
@@ -32,12 +55,24 @@ const AdminRoute: React.FC = () => {
   };
 
   const handleLogin = (success: boolean) => {
-    setIsAuthenticated(success);
+    if (success) {
+      setIsAuthenticated(true);
+      // Set session expiry for 8 hours
+      const expiry = Date.now() + (8 * 60 * 60 * 1000);
+      localStorage.setItem('adminSession', 'true');
+      localStorage.setItem('adminSessionExpiry', expiry.toString());
+    }
   };
 
   const handleLogout = async () => {
     try {
-      await supabase.auth.signOut();
+      if (isSupabaseConfigured()) {
+        await supabase.auth.signOut();
+      }
+      
+      // Clear demo session
+      localStorage.removeItem('adminSession');
+      localStorage.removeItem('adminSessionExpiry');
       setIsAuthenticated(false);
     } catch (error) {
       console.error('Error signing out:', error);

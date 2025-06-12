@@ -83,7 +83,11 @@ export const initializeSupabase = async () => {
 export const signInAsAdmin = async (email: string, password: string) => {
   if (!isSupabaseConfigured()) {
     console.log('⚠️  Demo mode: Admin authentication simulated');
-    return { success: true, user: { email, role: 'admin' } };
+    // Demo credentials check
+    if (email === 'admin@looom.shop' && password === 'admin123') {
+      return { success: true, user: { email, role: 'admin' } };
+    }
+    return { success: false, error: 'Invalid credentials' };
   }
 
   try {
@@ -108,6 +112,13 @@ export const signInAsAdmin = async (email: string, password: string) => {
 // Check if current user is authenticated
 export const getCurrentUser = async () => {
   if (!isSupabaseConfigured()) {
+    // In demo mode, check localStorage for admin session
+    const adminSession = localStorage.getItem('adminSession');
+    const sessionExpiry = localStorage.getItem('adminSessionExpiry');
+    
+    if (adminSession && sessionExpiry && Date.now() < parseInt(sessionExpiry)) {
+      return { id: 'demo-admin', email: 'admin@looom.shop', role: 'admin' };
+    }
     return null;
   }
 
@@ -129,6 +140,9 @@ export const getCurrentUser = async () => {
 // Sign out user
 export const signOut = async () => {
   if (!isSupabaseConfigured()) {
+    // Clear demo session
+    localStorage.removeItem('adminSession');
+    localStorage.removeItem('adminSessionExpiry');
     return { success: true };
   }
 

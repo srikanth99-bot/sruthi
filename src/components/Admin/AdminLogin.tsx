@@ -13,6 +13,7 @@ import {
   Mail
 } from 'lucide-react';
 import { useStore } from '../../store/useStore';
+import { isSupabaseConfigured } from '../../lib/supabase';
 
 interface AdminLoginProps {
   onLogin: (success: boolean) => void;
@@ -47,7 +48,22 @@ const AdminLogin: React.FC<AdminLoginProps> = ({ onLogin }) => {
     }
 
     try {
-      const success = await adminLogin(credentials.email, credentials.password);
+      let success = false;
+
+      if (isSupabaseConfigured()) {
+        // Use Supabase authentication
+        success = await adminLogin(credentials.email, credentials.password);
+      } else {
+        // Demo mode authentication
+        const demoCredentials = {
+          email: 'admin@looom.shop',
+          password: 'admin123'
+        };
+
+        if (credentials.email === demoCredentials.email && credentials.password === demoCredentials.password) {
+          success = true;
+        }
+      }
       
       if (success) {
         // Successful login
@@ -201,12 +217,19 @@ const AdminLogin: React.FC<AdminLoginProps> = ({ onLogin }) => {
           {/* Demo Credentials Info */}
           <div className="mt-8 pt-6 border-t border-white/20">
             <div className="text-center text-gray-400 text-sm">
-              <p className="mb-2">🔒 Demo Credentials:</p>
-              <div className="bg-white/5 rounded-lg p-3 mb-3">
-                <p className="font-mono text-xs text-green-300">Email: admin@looom.shop</p>
-                <p className="font-mono text-xs text-green-300">Password: admin123</p>
-              </div>
-              <p className="text-xs">Use these credentials to access the admin panel</p>
+              <p className="mb-2">🔒 {isSupabaseConfigured() ? 'Live Database Mode' : 'Demo Credentials'}:</p>
+              {!isSupabaseConfigured() && (
+                <div className="bg-white/5 rounded-lg p-3 mb-3">
+                  <p className="font-mono text-xs text-green-300">Email: admin@looom.shop</p>
+                  <p className="font-mono text-xs text-green-300">Password: admin123</p>
+                </div>
+              )}
+              <p className="text-xs">
+                {isSupabaseConfigured() 
+                  ? 'Use your Supabase account credentials' 
+                  : 'Use these credentials to access the admin panel'
+                }
+              </p>
             </div>
           </div>
 
