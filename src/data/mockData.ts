@@ -1,6 +1,30 @@
 import type { Product, Order } from '../types';
 
 export const mockProducts: Product[] = [
+  // New Ikkat Patterned Dress
+  {
+    id: '17',
+    name: 'Traditional Ikkat Patterned Dress',
+    price: 1000,
+    originalPrice: 1200,
+    category: 'Frocks',
+    images: [
+      '/WhatsApp Image 2025-02-03 at 9.12.46 AM.jpeg',
+      'https://images.pexels.com/photos/5560021/pexels-photo-5560021.jpeg',
+    ],
+    description: 'Beautiful traditional Ikkat patterned dress featuring vibrant red, orange, and brown geometric patterns. Perfect for casual wear and special occasions with its comfortable fit and elegant design.',
+    sizes: ['S', 'M', 'L', 'XL'],
+    colors: ['Red', 'Orange', 'Brown'],
+    inStock: true,
+    featured: true,
+    rating: 4.7,
+    reviewCount: 15,
+    tags: ['ikkat', 'traditional', 'patterned', 'casual', 'comfortable'],
+    supportsFeedingFriendly: false,
+    isStitchedDress: true,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  },
   // Sarees
   {
     id: '1',
