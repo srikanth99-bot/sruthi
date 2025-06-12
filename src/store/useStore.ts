@@ -540,22 +540,27 @@ export const useStore = create<StoreState>()(
 
       adminLogin: async (email: string, password: string) => {
         try {
-          // Demo credentials check first
-          const demoCredentials = {
-            email: 'admin@looom.shop',
-            password: 'admin123'
-          };
-
           let authSuccess = false;
 
-          // Check demo credentials first
-          if (email === demoCredentials.email && password === demoCredentials.password) {
-            authSuccess = true;
-            console.log('✅ Demo admin login successful');
-          } else if (isSupabaseConfigured()) {
-            // Try Supabase authentication if configured
+          if (isSupabaseConfigured()) {
+            // If Supabase is configured, always try to authenticate via Supabase
             const result = await signInAsAdmin(email, password);
             authSuccess = result.success;
+            
+            if (authSuccess) {
+              console.log('✅ Supabase admin login successful');
+            }
+          } else {
+            // Only use demo credentials if Supabase is not configured
+            const demoCredentials = {
+              email: 'admin@looom.shop',
+              password: 'admin123'
+            };
+
+            if (email === demoCredentials.email && password === demoCredentials.password) {
+              authSuccess = true;
+              console.log('✅ Demo admin login successful');
+            }
           }
 
           if (authSuccess) {
