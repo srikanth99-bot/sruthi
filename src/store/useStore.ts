@@ -539,31 +539,49 @@ export const useStore = create<StoreState>()(
       },
 
       adminLogin: async (email: string, password: string) => {
+        console.log('🔐 Admin login attempt:', { email, hasPassword: !!password });
+        
         try {
           let authSuccess = false;
 
           if (isSupabaseConfigured()) {
-            // If Supabase is configured, always try to authenticate via Supabase
+            console.log('📡 Using Supabase authentication...');
+            // If Supabase is configured, try to authenticate via Supabase
             const result = await signInAsAdmin(email, password);
             authSuccess = result.success;
             
             if (authSuccess) {
               console.log('✅ Supabase admin login successful');
+            } else {
+              console.log('❌ Supabase admin login failed:', result.error);
             }
           } else {
-            // Only use demo credentials if Supabase is not configured
+            console.log('🔧 Using demo mode authentication...');
+            // Demo mode credentials
             const demoCredentials = {
               email: 'admin@looom.shop',
               password: 'admin123'
             };
 
+            console.log('🔍 Checking credentials:', {
+              providedEmail: email,
+              expectedEmail: demoCredentials.email,
+              emailMatch: email === demoCredentials.email,
+              providedPassword: password,
+              expectedPassword: demoCredentials.password,
+              passwordMatch: password === demoCredentials.password
+            });
+
             if (email === demoCredentials.email && password === demoCredentials.password) {
               authSuccess = true;
               console.log('✅ Demo admin login successful');
+            } else {
+              console.log('❌ Demo admin login failed - credentials mismatch');
             }
           }
 
           if (authSuccess) {
+            console.log('🎉 Creating admin user session...');
             // Create admin user
             const adminUser: User = {
               id: 'admin_1',
@@ -602,12 +620,14 @@ export const useStore = create<StoreState>()(
               isRead: false
             });
 
+            console.log('✅ Admin session created successfully');
             return true;
           }
           
+          console.log('❌ Authentication failed');
           return false;
         } catch (error) {
-          console.error('Admin login failed:', error);
+          console.error('❌ Admin login error:', error);
           return false;
         }
       },
