@@ -28,10 +28,6 @@ const AdminLogin: React.FC<AdminLoginProps> = ({ onLogin }) => {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
-  const [attempts, setAttempts] = useState(0);
-
-  const MAX_ATTEMPTS = 3;
-  const LOCKOUT_TIME = 15 * 60 * 1000; // 15 minutes
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -41,15 +37,6 @@ const AdminLogin: React.FC<AdminLoginProps> = ({ onLogin }) => {
     
     setIsLoading(true);
     setError('');
-
-    // Check if user is locked out
-    const lockoutEnd = localStorage.getItem('adminLockoutEnd');
-    if (lockoutEnd && Date.now() < parseInt(lockoutEnd)) {
-      const remainingTime = Math.ceil((parseInt(lockoutEnd) - Date.now()) / 60000);
-      setError(`Account locked. Try again in ${remainingTime} minutes.`);
-      setIsLoading(false);
-      return;
-    }
 
     // Validate input
     if (!credentials.email || !credentials.password) {
@@ -65,24 +52,12 @@ const AdminLogin: React.FC<AdminLoginProps> = ({ onLogin }) => {
       if (success) {
         // Successful login
         console.log('✅ Admin login successful');
-        localStorage.removeItem('adminAttempts');
-        localStorage.removeItem('adminLockoutEnd');
         setError('');
         onLogin(true);
       } else {
         // Failed login
         console.log('❌ Admin login failed');
-        const newAttempts = attempts + 1;
-        setAttempts(newAttempts);
-        localStorage.setItem('adminAttempts', newAttempts.toString());
-
-        if (newAttempts >= MAX_ATTEMPTS) {
-          const lockoutEnd = Date.now() + LOCKOUT_TIME;
-          localStorage.setItem('adminLockoutEnd', lockoutEnd.toString());
-          setError(`Too many failed attempts. Account locked for 15 minutes.`);
-        } else {
-          setError(`Invalid credentials. ${MAX_ATTEMPTS - newAttempts} attempts remaining.`);
-        }
+        setError('Invalid credentials. Please check your email and password.');
       }
     } catch (error) {
       console.error('❌ Login error:', error);
@@ -91,13 +66,6 @@ const AdminLogin: React.FC<AdminLoginProps> = ({ onLogin }) => {
       setIsLoading(false);
     }
   };
-
-  React.useEffect(() => {
-    const storedAttempts = localStorage.getItem('adminAttempts');
-    if (storedAttempts) {
-      setAttempts(parseInt(storedAttempts));
-    }
-  }, []);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-indigo-900 flex items-center justify-center p-4">
@@ -201,7 +169,7 @@ const AdminLogin: React.FC<AdminLoginProps> = ({ onLogin }) => {
               whileHover={!isLoading ? { scale: 1.02 } : {}}
               whileTap={!isLoading ? { scale: 0.98 } : {}}
               type="submit"
-              disabled={isLoading || attempts >= MAX_ATTEMPTS}
+              disabled={isLoading}
               className="w-full bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-bold py-4 rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
             >
               {isLoading ? (
