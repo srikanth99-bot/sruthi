@@ -45,9 +45,14 @@ const AdminLogin: React.FC<AdminLoginProps> = ({ onLogin }) => {
       return;
     }
 
+    // Trim whitespace from inputs
+    const trimmedCredentials = {
+      email: credentials.email.trim().toLowerCase(),
+      password: credentials.password.trim()
+    };
     try {
       console.log('🔐 Attempting admin login...');
-      const success = await adminLogin(credentials.email, credentials.password);
+      const success = await adminLogin(trimmedCredentials.email, trimmedCredentials.password);
       
       if (success) {
         // Successful login
@@ -57,7 +62,7 @@ const AdminLogin: React.FC<AdminLoginProps> = ({ onLogin }) => {
       } else {
         // Failed login
         console.log('❌ Admin login failed');
-        setError('Invalid credentials. Please check your email and password.');
+        setError('Invalid credentials. Please use: admin@looom.shop / admin123');
       }
     } catch (error) {
       console.error('❌ Login error:', error);
