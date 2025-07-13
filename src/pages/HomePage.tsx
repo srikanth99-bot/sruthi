@@ -8,12 +8,10 @@ interface HomePageProps {
 }
 
 const HomePage: React.FC<HomePageProps> = ({ onCategoryClick }) => {
-  const { addToCart, stories, banners, landingSettings, products } = useStore();
+  const { addToCart, banners, landingSettings, products } = useStore();
   const [activeCategory, setActiveCategory] = useState('All');
-  const [currentStory, setCurrentStory] = useState(0);
   const [currentBanner, setCurrentBanner] = useState(0);
 
-  const activeStories = stories.filter(story => story.isActive).sort((a, b) => a.sortOrder - b.sortOrder);
   const activeBanners = banners.filter(banner => banner.isActive).sort((a, b) => a.sortOrder - b.sortOrder);
 
   // Use landing settings for categories if available
@@ -51,15 +49,6 @@ const HomePage: React.FC<HomePageProps> = ({ onCategoryClick }) => {
   }
 
   useEffect(() => {
-    if (activeStories.length > 0) {
-      const timer = setInterval(() => {
-        setCurrentStory((prev) => (prev + 1) % activeStories.length);
-      }, 4000);
-      return () => clearInterval(timer);
-    }
-  }, [activeStories.length]);
-
-  useEffect(() => {
     if (activeBanners.length > 1) {
       const timer = setInterval(() => {
         setCurrentBanner((prev) => (prev + 1) % activeBanners.length);
@@ -67,14 +56,6 @@ const HomePage: React.FC<HomePageProps> = ({ onCategoryClick }) => {
       return () => clearInterval(timer);
     }
   }, [activeBanners.length]);
-
-  const handleStoryClick = (story: any) => {
-    if (story.linkType === 'category' && story.linkValue) {
-      onCategoryClick(story.linkValue);
-    } else if (story.linkType === 'collection' && story.linkValue) {
-      onCategoryClick(story.linkValue);
-    }
-  };
 
   const handleBannerClick = (banner: any) => {
     if (banner.linkType === 'category' && banner.linkValue) {
@@ -94,41 +75,6 @@ const HomePage: React.FC<HomePageProps> = ({ onCategoryClick }) => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Stories Section */}
-      <div className="px-4 py-4">
-        <div className="flex space-x-3 overflow-x-auto scrollbar-hide">
-          {activeStories.map((story, index) => (
-            <motion.div
-              key={story.id}
-              whileTap={{ scale: 0.95 }}
-              onClick={() => handleStoryClick(story)}
-              className={`relative flex-shrink-0 w-20 h-20 rounded-2xl overflow-hidden cursor-pointer ${
-                index === currentStory ? 'ring-4 ring-purple-500 ring-offset-2' : ''
-              }`}
-            >
-              <img
-                src={story.image}
-                alt={story.title}
-                className="w-full h-full object-cover"
-              />
-              <div className={`absolute inset-0 bg-gradient-to-br ${story.gradient} opacity-60`} />
-              <div className="absolute inset-0 flex items-center justify-center">
-                <span className="text-white text-xs font-bold text-center">
-                  {story.title}
-                </span>
-              </div>
-              {index === currentStory && (
-                <motion.div
-                  initial={{ scale: 0 }}
-                  animate={{ scale: 1 }}
-                  className="absolute top-1 right-1 w-3 h-3 bg-green-500 rounded-full border-2 border-white"
-                />
-              )}
-            </motion.div>
-          ))}
-        </div>
-      </div>
-
       {/* Dynamic Banners Section */}
       {activeBanners.length > 0 && (
         <div className="px-4 mb-6">
