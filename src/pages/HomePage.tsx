@@ -2,14 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Star, ArrowRight, Play, Sparkles, Heart, ShoppingBag, Zap, TrendingUp, Siren as Fire, Crown, Eye, Plus } from 'lucide-react';
 import { useStore } from '../store/useStore';
-import { mockProducts } from '../data/mockData';
 
 interface HomePageProps {
   onCategoryClick: (category: string) => void;
 }
 
 const HomePage: React.FC<HomePageProps> = ({ onCategoryClick }) => {
-  const { addToCart, stories, banners } = useStore();
+  const { addToCart, stories, banners, landingSettings, products } = useStore();
   const [activeCategory, setActiveCategory] = useState('All');
   const [currentStory, setCurrentStory] = useState(0);
   const [currentBanner, setCurrentBanner] = useState(0);
@@ -17,16 +16,39 @@ const HomePage: React.FC<HomePageProps> = ({ onCategoryClick }) => {
   const activeStories = stories.filter(story => story.isActive).sort((a, b) => a.sortOrder - b.sortOrder);
   const activeBanners = banners.filter(banner => banner.isActive).sort((a, b) => a.sortOrder - b.sortOrder);
 
+  // Use landing settings for categories if available
+  const categoryNames = landingSettings?.categoriesList || ['Sarees', 'Frocks', 'Kurtas', 'Lehengas', 'Dress Materials', 'Blouses'];
+  
   const categories = [
-    { id: 'All', name: 'All', icon: '🔥', count: mockProducts.length },
-    { id: 'Sarees', name: 'Sarees', icon: '👗', count: mockProducts.filter(p => p.category === 'Sarees').length },
-    { id: 'Frocks', name: 'Frocks', icon: '👚', count: mockProducts.filter(p => p.category === 'Frocks').length },
-    { id: 'Kurtas', name: 'Kurtas', icon: '👘', count: mockProducts.filter(p => p.category === 'Kurtas').length },
-    { id: 'Lehengas', name: 'Lehengas', icon: '👑', count: mockProducts.filter(p => p.category === 'Lehengas').length }
+    { id: 'All', name: 'All', icon: '🔥', count: products.length },
+    ...categoryNames.map(cat => ({
+      id: cat,
+      name: cat,
+      icon: cat === 'Sarees' ? '👗' : 
+            cat === 'Frocks' ? '👚' : 
+            cat === 'Kurtas' ? '👘' : 
+            cat === 'Lehengas' ? '👑' : 
+            cat === 'Dress Materials' ? '🧵' : 
+            cat === 'Blouses' ? '👕' : '📦',
+      count: products.filter(p => p.category === cat).length
+    }))
   ];
 
-  const featuredProducts = mockProducts.filter(p => p.featured).slice(0, 6);
-  const trendingProducts = mockProducts.slice(0, 4);
+  // Use landing settings for featured products if available
+  let featuredProducts = products.filter(p => p.featured).slice(0, 6);
+  if (landingSettings?.bestSellingProductIds && landingSettings.bestSellingProductIds.length > 0) {
+    featuredProducts = products
+      .filter(p => landingSettings.bestSellingProductIds?.includes(p.id))
+      .slice(0, 6);
+  }
+  
+  // Use landing settings for trending products if available
+  let trendingProducts = products.slice(0, 4);
+  if (landingSettings?.trendingProductIds && landingSettings.trendingProductIds.length > 0) {
+    trendingProducts = products
+      .filter(p => landingSettings.trendingProductIds?.includes(p.id))
+      .slice(0, 4);
+  }
 
   useEffect(() => {
     if (activeStories.length > 0) {
@@ -195,7 +217,7 @@ const HomePage: React.FC<HomePageProps> = ({ onCategoryClick }) => {
       {/* Categories */}
       <div className="px-4 mb-6">
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-xl font-bold text-gray-900">Categories</h3>
+          <h3 className="text-xl font-bold text-gray-900">{landingSettings?.popularCategoriesTitle || 'Categories'}</h3>
           <button className="text-purple-600 font-semibold text-sm">View All</button>
         </div>
         <div className="flex space-x-3 overflow-x-auto scrollbar-hide">
@@ -231,8 +253,8 @@ const HomePage: React.FC<HomePageProps> = ({ onCategoryClick }) => {
       <div className="px-4 mb-6">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center space-x-2">
-            <TrendingUp className="h-5 w-5 text-orange-500" />
-            <h3 className="text-xl font-bold text-gray-900">Trending Now</h3>
+            <TrendingUp className="h-5 w-5 text-orange-500" /> 
+            <h3 className="text-xl font-bold text-gray-900">{landingSettings?.trendingTitle || 'Trending Now'}</h3>
           </div>
           <button className="text-purple-600 font-semibold text-sm">See All</button>
         </div>
@@ -288,7 +310,7 @@ const HomePage: React.FC<HomePageProps> = ({ onCategoryClick }) => {
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center space-x-2">
             <Crown className="h-5 w-5 text-yellow-500" />
-            <h3 className="text-xl font-bold text-gray-900">Featured</h3>
+            <h3 className="text-xl font-bold text-gray-900">{landingSettings?.bestSellingTitle || 'Featured'}</h3>
           </div>
           <button className="text-purple-600 font-semibold text-sm">View All</button>
         </div>

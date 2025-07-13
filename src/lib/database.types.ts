@@ -9,6 +9,80 @@ export type Json =
 export interface Database {
   public: {
     Tables: {
+      landing_settings: {
+        Row: {
+          id: string
+          page_title: string
+          page_subtitle: string | null
+          banner_image_url: string | null
+          categories_list: string[] | null
+          hero_description: string | null
+          cta_text: string | null
+          cta_link: string | null
+          show_featured_products: boolean | null
+          show_categories: boolean | null
+          top_banner_text: string | null
+          top_banner_active: boolean | null
+          site_logo_url: string | null
+          site_name: string | null
+          best_selling_title: string | null
+          best_selling_product_ids: string[] | null
+          trending_title: string | null
+          trending_product_ids: string[] | null
+          popular_categories_title: string | null
+          popular_category_ids: string[] | null
+          created_at: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          id?: string
+          page_title?: string
+          page_subtitle?: string | null
+          banner_image_url?: string | null
+          categories_list?: string[] | null
+          hero_description?: string | null
+          cta_text?: string | null
+          cta_link?: string | null
+          show_featured_products?: boolean | null
+          show_categories?: boolean | null
+          top_banner_text?: string | null
+          top_banner_active?: boolean | null
+          site_logo_url?: string | null
+          site_name?: string | null
+          best_selling_title?: string | null
+          best_selling_product_ids?: string[] | null
+          trending_title?: string | null
+          trending_product_ids?: string[] | null
+          popular_categories_title?: string | null
+          popular_category_ids?: string[] | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          id?: string
+          page_title?: string
+          page_subtitle?: string | null
+          banner_image_url?: string | null
+          categories_list?: string[] | null
+          hero_description?: string | null
+          cta_text?: string | null
+          cta_link?: string | null
+          show_featured_products?: boolean | null
+          show_categories?: boolean | null
+          top_banner_text?: string | null
+          top_banner_active?: boolean | null
+          site_logo_url?: string | null
+          site_name?: string | null
+          best_selling_title?: string | null
+          best_selling_product_ids?: string[] | null
+          trending_title?: string | null
+          trending_product_ids?: string[] | null
+          popular_categories_title?: string | null
+          popular_category_ids?: string[] | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+      }
       products: {
         Row: {
           id: string

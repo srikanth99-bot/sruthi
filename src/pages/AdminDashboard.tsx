@@ -49,6 +49,7 @@ import ProductManagementPage from './ProductManagementPage';
 import CategoriesManagementPage from './CategoriesManagementPage';
 import StoriesManagementPage from './StoriesManagementPage';
 import BannersManagementPage from './BannersManagementPage';
+import LandingPageSettings from './LandingPageSettings';
 import ThemesManagementPage from './ThemesManagementPage';
 import type { Order, Product, RazorpayPayment } from '../types';
 
@@ -181,6 +182,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
   const tabs = [
     { id: 'overview', label: 'Overview', icon: BarChart3 },
     { id: 'orders', label: 'Orders', icon: ShoppingCart, badge: orders.length },
+    { id: 'landing-settings', label: 'Landing Page', icon: Globe },
     { id: 'payments', label: 'Payments', icon: CreditCard, badge: payments.length },
     { id: 'products', label: 'Products', icon: Package, badge: totalProducts },
     { id: 'product-management', label: 'Product Management', icon: Boxes, badge: categories.length },
@@ -838,6 +840,11 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
   // If Themes tab is selected, render the ThemesManagementPage
   if (activeTab === 'themes') {
     return <ThemesManagementPage onBack={() => setActiveTab('overview')} />;
+  }
+  
+  // If Landing Page Settings tab is selected, render the LandingPageSettings
+  if (activeTab === 'landing-settings') {
+    return <LandingPageSettings onBack={() => setActiveTab('overview')} />;
   }
 
   return (

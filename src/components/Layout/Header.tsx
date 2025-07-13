@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Search, ShoppingBag, Menu, User, Heart, Bell, MapPin, ChevronDown } from 'lucide-react';
 import { useStore } from '../../store/useStore';
+import type { LandingSettings } from '../../types';
 
 interface HeaderProps {
   isAdmin?: boolean;
@@ -14,6 +15,7 @@ const Header: React.FC<HeaderProps> = ({ isAdmin = false }) => {
     setMobileMenuOpen, 
     searchQuery, 
     setSearchQuery,
+    landingSettings,
     isAuthenticated,
     user,
     getUnreadNotificationCount
@@ -64,12 +66,12 @@ const Header: React.FC<HeaderProps> = ({ isAdmin = false }) => {
       {/* Top Banner */}
       <div className="bg-gradient-to-r from-purple-600 via-pink-600 to-red-500 text-white text-center py-2 text-sm font-medium">
         <motion.div
+          key={landingSettings?.topBannerText || 'default-banner'}
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           className="flex items-center justify-center space-x-2"
         >
-          <span>🎉 Grand Opening Sale - Up to 70% OFF</span>
-          <span className="hidden sm:inline">| Free Shipping on Orders ₹1999+</span>
+          <span>{landingSettings?.topBannerText || '🎉 Grand Opening Sale - Up to 70% OFF | Free Shipping on Orders ₹1999+'}</span>
         </motion.div>
       </div>
 
@@ -104,12 +106,21 @@ const Header: React.FC<HeaderProps> = ({ isAdmin = false }) => {
             {/* Logo */}
             <motion.div 
               whileHover={{ scale: 1.05 }}
-              className="flex-shrink-0"
+              className="flex-shrink-0 flex items-center"
             >
-              <h1 className="text-2xl font-bold bg-gradient-to-r from-purple-600 via-pink-600 to-red-500 bg-clip-text text-transparent">
-                looom.shop
-              </h1>
-              <p className="text-xs text-gray-500 -mt-1">Handwoven Heritage</p>
+              {landingSettings?.siteLogoUrl ? (
+                <img 
+                  src={landingSettings.siteLogoUrl} 
+                  alt={landingSettings.siteName || 'looom.shop'} 
+                  className="h-8 w-auto mr-2"
+                />
+              ) : null}
+              <div>
+                <h1 className="text-2xl font-bold bg-gradient-to-r from-purple-600 via-pink-600 to-red-500 bg-clip-text text-transparent">
+                  {landingSettings?.siteName || 'looom.shop'}
+                </h1>
+                <p className="text-xs text-gray-500 -mt-1">{landingSettings?.pageSubtitle || 'Handwoven Heritage'}</p>
+              </div>
             </motion.div>
 
             {/* Search Bar - Desktop */}

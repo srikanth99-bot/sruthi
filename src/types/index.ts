@@ -115,6 +115,31 @@ export interface User {
   wishlist: string[]; // Product IDs
 }
 
+export interface LandingSettings {
+  id: string;
+  pageTitle: string;
+  pageSubtitle?: string;
+  bannerImageUrl?: string;
+  categoriesList?: string[];
+  heroDescription?: string;
+  ctaText?: string;
+  ctaLink?: string;
+  showFeaturedProducts?: boolean;
+  showCategories?: boolean;
+  topBannerText?: string;
+  topBannerActive?: boolean;
+  siteLogoUrl?: string;
+  siteName?: string;
+  bestSellingTitle?: string;
+  bestSellingProductIds?: string[];
+  trendingTitle?: string;
+  trendingProductIds?: string[];
+  popularCategoriesTitle?: string;
+  popularCategoryIds?: string[];
+  createdAt?: string;
+  updatedAt?: string;
+}
+
 export interface AuthState {
   isAuthenticated: boolean;
   user: User | null;
