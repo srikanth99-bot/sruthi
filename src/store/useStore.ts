@@ -188,6 +188,9 @@ export const useStore = create<StoreState>()(
       notifications: [],
       isLoadingProducts: false,
       isInitialized: false,
+      getUnreadNotificationCount: () => {
+        return get().notifications.filter(notification => !notification.isRead).length;
+      },
       
       // Initialize app
       initializeApp: async () => {
@@ -211,6 +214,18 @@ export const useStore = create<StoreState>()(
         } catch (error) {
           console.error('❌ App initialization failed:', error);
           set({ isInitialized: true }); // Still mark as initialized to prevent infinite loops
+        }
+      },
+      
+      // Load products
+      loadProducts: async () => {
+        try {
+          set({ isLoadingProducts: true });
+          const products = await productService.getProducts();
+          set({ products, isLoadingProducts: false });
+        } catch (error) {
+          console.error('Failed to load products:', error);
+          set({ isLoadingProducts: false });
         }
       },
 
@@ -596,17 +611,6 @@ export const useStore = create<StoreState>()(
       },
 
       // Product actions
-      loadProducts: async () => {
-        try {
-          set({ isLoadingProducts: true });
-          const products = await productService.getProducts();
-          set({ products, isLoadingProducts: false });
-        } catch (error) {
-          console.error('Failed to load products:', error);
-          set({ isLoadingProducts: false });
-        }
-      },
-
       createProduct: async (product: Partial<Product>) => {
         try {
           const newProduct = await productService.createProduct(product);
