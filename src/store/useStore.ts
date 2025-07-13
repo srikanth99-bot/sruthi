@@ -171,22 +171,23 @@ export const useStore = create<StoreState>()(
       stories: [],
       banners: [],
       filters: {
-        categories: [],
+        category: '',
         priceRange: [0, 10000],
-        sizes: [],
         colors: [],
+        sizes: [],
+        inStock: false,
         sortBy: 'newest'
       },
       searchQuery: '',
       mobileMenuOpen: false,
       filterDrawerOpen: false,
+      landingSettings: null,
       orders: [],
       selectedOrder: null,
       payments: [],
       notifications: [],
       isLoadingProducts: false,
       isInitialized: false,
-      landingSettings: null,
       
       // Initialize app
       initializeApp: async () => {
@@ -215,19 +216,38 @@ export const useStore = create<StoreState>()(
 
       // Auth actions
       login: async (credentials: LoginCredentials) => {
-        // Mock implementation - replace with actual auth logic
-        return false;
+        try {
+          // Mock login implementation
+          const mockUser: User = {
+            id: '1',
+            email: credentials.email,
+            name: 'User',
+            phone: '',
+            addresses: [],
+            wishlist: [],
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString()
+          };
+          
+          set({
+            isAuthenticated: true,
+            user: mockUser,
+            token: 'mock-token'
+          });
+          
+          return true;
+        } catch (error) {
+          console.error('Login failed:', error);
+          return false;
+        }
       },
-      
+
       adminLogin: async (email: string, password: string) => {
         try {
-          const result = await signInAsAdmin(email, password);
-          if (result.success && result.user) {
-            set({
-              isAuthenticated: true,
-              user: result.user,
-              token: result.token
-            });
+          // Simple admin check
+          if (email === 'admin@looom.shop' && password === 'admin123') {
+            localStorage.setItem('adminSession', 'true');
+            localStorage.setItem('adminSessionExpiry', (Date.now() + 8 * 60 * 60 * 1000).toString());
             return true;
           }
           return false;
@@ -236,12 +256,34 @@ export const useStore = create<StoreState>()(
           return false;
         }
       },
-      
+
       signup: async (data: SignupData) => {
-        // Mock implementation - replace with actual auth logic
-        return false;
+        try {
+          // Mock signup implementation
+          const mockUser: User = {
+            id: Date.now().toString(),
+            email: data.email,
+            name: data.name,
+            phone: data.phone || '',
+            addresses: [],
+            wishlist: [],
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString()
+          };
+          
+          set({
+            isAuthenticated: true,
+            user: mockUser,
+            token: 'mock-token'
+          });
+          
+          return true;
+        } catch (error) {
+          console.error('Signup failed:', error);
+          return false;
+        }
       },
-      
+
       logout: async () => {
         try {
           await signOut();
@@ -255,65 +297,92 @@ export const useStore = create<StoreState>()(
           console.error('Logout failed:', error);
         }
       },
-      
+
       updateProfile: (updates: Partial<User>) => {
         const currentUser = get().user;
         if (currentUser) {
-          set({ user: { ...currentUser, ...updates } });
+          set({
+            user: { ...currentUser, ...updates, updatedAt: new Date().toISOString() }
+          });
         }
       },
-      
+
       addAddress: (address: Address) => {
         const currentUser = get().user;
         if (currentUser) {
-          const updatedUser = {
-            ...currentUser,
-            addresses: [...(currentUser.addresses || []), address]
-          };
-          set({ user: updatedUser });
+          const newAddress = { ...address, id: Date.now().toString() };
+          set({
+            user: {
+              ...currentUser,
+              addresses: [...currentUser.addresses, newAddress],
+              updatedAt: new Date().toISOString()
+            }
+          });
         }
       },
-      
+
       updateAddress: (addressId: string, updates: Partial<Address>) => {
         const currentUser = get().user;
-        if (currentUser && currentUser.addresses) {
-          const updatedAddresses = currentUser.addresses.map(addr =>
-            addr.id === addressId ? { ...addr, ...updates } : addr
-          );
-          set({ user: { ...currentUser, addresses: updatedAddresses } });
+        if (currentUser) {
+          set({
+            user: {
+              ...currentUser,
+              addresses: currentUser.addresses.map(addr =>
+                addr.id === addressId ? { ...addr, ...updates } : addr
+              ),
+              updatedAt: new Date().toISOString()
+            }
+          });
         }
       },
-      
+
       deleteAddress: (addressId: string) => {
         const currentUser = get().user;
-        if (currentUser && currentUser.addresses) {
-          const updatedAddresses = currentUser.addresses.filter(addr => addr.id !== addressId);
-          set({ user: { ...currentUser, addresses: updatedAddresses } });
+        if (currentUser) {
+          set({
+            user: {
+              ...currentUser,
+              addresses: currentUser.addresses.filter(addr => addr.id !== addressId),
+              updatedAt: new Date().toISOString()
+            }
+          });
         }
       },
-      
+
       setDefaultAddress: (addressId: string) => {
         const currentUser = get().user;
-        if (currentUser && currentUser.addresses) {
-          const updatedAddresses = currentUser.addresses.map(addr => ({
-            ...addr,
-            isDefault: addr.id === addressId
-          }));
-          set({ user: { ...currentUser, addresses: updatedAddresses } });
+        if (currentUser) {
+          set({
+            user: {
+              ...currentUser,
+              addresses: currentUser.addresses.map(addr => ({
+                ...addr,
+                isDefault: addr.id === addressId
+              })),
+              updatedAt: new Date().toISOString()
+            }
+          });
         }
       },
-      
+
       // Cart actions
       addToCart: (product: Product, size: string, color: string, quantity = 1) => {
         const cartItems = get().cartItems;
         const existingItem = cartItems.find(
           item => item.product.id === product.id && item.size === size && item.color === color
         );
-        
+
         if (existingItem) {
-          get().updateCartQuantity(product.id, size, color, existingItem.quantity + quantity);
+          set({
+            cartItems: cartItems.map(item =>
+              item.product.id === product.id && item.size === size && item.color === color
+                ? { ...item, quantity: item.quantity + quantity }
+                : item
+            )
+          });
         } else {
           const newItem: CartItem = {
+            id: `${product.id}-${size}-${color}`,
             product,
             size,
             color,
@@ -322,34 +391,210 @@ export const useStore = create<StoreState>()(
           set({ cartItems: [...cartItems, newItem] });
         }
       },
-      
+
       removeFromCart: (productId: string, size: string, color: string) => {
-        const cartItems = get().cartItems;
-        const updatedItems = cartItems.filter(
-          item => !(item.product.id === productId && item.size === size && item.color === color)
-        );
-        set({ cartItems: updatedItems });
-      },
-      
-      updateCartQuantity: (productId: string, size: string, color: string, quantity: number) => {
-        const cartItems = get().cartItems;
-        const updatedItems = cartItems.map(item => {
-          if (item.product.id === productId && item.size === size && item.color === color) {
-            return { ...item, quantity };
-          }
-          return item;
+        set({
+          cartItems: get().cartItems.filter(
+            item => !(item.product.id === productId && item.size === size && item.color === color)
+          )
         });
-        set({ cartItems: updatedItems });
       },
-      
+
+      updateCartQuantity: (productId: string, size: string, color: string, quantity: number) => {
+        if (quantity <= 0) {
+          get().removeFromCart(productId, size, color);
+          return;
+        }
+
+        set({
+          cartItems: get().cartItems.map(item =>
+            item.product.id === productId && item.size === size && item.color === color
+              ? { ...item, quantity }
+              : item
+          )
+        });
+      },
+
       clearCart: () => {
         set({ cartItems: [] });
       },
-      
+
       setCartOpen: (open: boolean) => {
         set({ cartOpen: open });
       },
-      
+
+      // Order actions
+      createOrder: (orderData) => {
+        const orderId = Date.now().toString();
+        const newOrder: Order = {
+          ...orderData,
+          id: orderId,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+          statusHistory: [{
+            status: orderData.status,
+            timestamp: new Date().toISOString(),
+            notes: 'Order created'
+          }]
+        };
+
+        set({
+          orders: [...get().orders, newOrder]
+        });
+
+        return orderId;
+      },
+
+      getUserOrders: (userId: string) => {
+        return get().orders.filter(order => order.userId === userId);
+      },
+
+      getOrderById: (orderId: string) => {
+        return get().orders.find(order => order.id === orderId) || null;
+      },
+
+      updateOrderStatus: (orderId: string, status: Order['status'], notes?: string) => {
+        set({
+          orders: get().orders.map(order =>
+            order.id === orderId
+              ? {
+                  ...order,
+                  status,
+                  updatedAt: new Date().toISOString(),
+                  statusHistory: [
+                    ...order.statusHistory,
+                    {
+                      status,
+                      timestamp: new Date().toISOString(),
+                      notes: notes || `Status updated to ${status}`
+                    }
+                  ]
+                }
+              : order
+          )
+        });
+      },
+
+      // Payment actions
+      addPayment: (payment: RazorpayPayment) => {
+        set({
+          payments: [...get().payments, payment]
+        });
+      },
+
+      updatePayment: (paymentId: string, updates: Partial<RazorpayPayment>) => {
+        set({
+          payments: get().payments.map(payment =>
+            payment.id === paymentId ? { ...payment, ...updates } : payment
+          )
+        });
+      },
+
+      getPaymentById: (paymentId: string) => {
+        return get().payments.find(payment => payment.id === paymentId) || null;
+      },
+
+      getPaymentsByOrder: (orderId: string) => {
+        return get().payments.filter(payment => payment.orderId === orderId);
+      },
+
+      getAllPayments: () => {
+        return get().payments;
+      },
+
+      getPaymentStats: () => {
+        const payments = get().payments;
+        const today = new Date().toDateString();
+        
+        const todayPayments = payments.filter(payment => 
+          new Date(payment.createdAt).toDateString() === today
+        );
+
+        const successful = payments.filter(payment => payment.status === 'captured').length;
+        const failed = payments.filter(payment => payment.status === 'failed').length;
+        const refunded = payments.filter(payment => payment.status === 'refunded').length;
+
+        const totalAmount = payments
+          .filter(payment => payment.status === 'captured')
+          .reduce((sum, payment) => sum + payment.amount, 0);
+
+        const todayAmount = todayPayments
+          .filter(payment => payment.status === 'captured')
+          .reduce((sum, payment) => sum + payment.amount, 0);
+
+        return {
+          total: payments.length,
+          today: todayPayments.length,
+          successful,
+          failed,
+          refunded,
+          totalAmount,
+          todayAmount
+        };
+      },
+
+      // Wishlist actions
+      addToWishlist: (productId: string) => {
+        const currentUser = get().user;
+        if (currentUser && !currentUser.wishlist.includes(productId)) {
+          set({
+            user: {
+              ...currentUser,
+              wishlist: [...currentUser.wishlist, productId],
+              updatedAt: new Date().toISOString()
+            }
+          });
+        }
+      },
+
+      removeFromWishlist: (productId: string) => {
+        const currentUser = get().user;
+        if (currentUser) {
+          set({
+            user: {
+              ...currentUser,
+              wishlist: currentUser.wishlist.filter(id => id !== productId),
+              updatedAt: new Date().toISOString()
+            }
+          });
+        }
+      },
+
+      isInWishlist: (productId: string) => {
+        const currentUser = get().user;
+        return currentUser ? currentUser.wishlist.includes(productId) : false;
+      },
+
+      // Notification actions
+      addNotification: (notification) => {
+        const newNotification: Notification = {
+          ...notification,
+          id: Date.now().toString(),
+          createdAt: new Date().toISOString()
+        };
+        set({
+          notifications: [newNotification, ...get().notifications]
+        });
+      },
+
+      markNotificationAsRead: (notificationId: string) => {
+        set({
+          notifications: get().notifications.map(notification =>
+            notification.id === notificationId
+              ? { ...notification, read: true }
+              : notification
+          )
+        });
+      },
+
+      clearNotifications: () => {
+        set({ notifications: [] });
+      },
+
+      getUnreadNotificationCount: () => {
+        return get().notifications.filter(notification => !notification.read).length;
+      },
+
       // Product actions
       loadProducts: async () => {
         try {
@@ -361,13 +606,14 @@ export const useStore = create<StoreState>()(
           set({ isLoadingProducts: false });
         }
       },
-      
+
       createProduct: async (product: Partial<Product>) => {
         try {
           const newProduct = await productService.createProduct(product);
           if (newProduct) {
-            const products = get().products;
-            set({ products: [...products, newProduct] });
+            set({
+              products: [...get().products, newProduct]
+            });
           }
           return newProduct;
         } catch (error) {
@@ -375,14 +621,16 @@ export const useStore = create<StoreState>()(
           return null;
         }
       },
-      
+
       updateProduct: async (id: string, updates: Partial<Product>) => {
         try {
           const updatedProduct = await productService.updateProduct(id, updates);
           if (updatedProduct) {
-            const products = get().products;
-            const updatedProducts = products.map(p => p.id === id ? updatedProduct : p);
-            set({ products: updatedProducts });
+            set({
+              products: get().products.map(product =>
+                product.id === id ? updatedProduct : product
+              )
+            });
           }
           return updatedProduct;
         } catch (error) {
@@ -390,14 +638,14 @@ export const useStore = create<StoreState>()(
           return null;
         }
       },
-      
+
       deleteProduct: async (id: string) => {
         try {
           const success = await productService.deleteProduct(id);
           if (success) {
-            const products = get().products;
-            const updatedProducts = products.filter(p => p.id !== id);
-            set({ products: updatedProducts });
+            set({
+              products: get().products.filter(product => product.id !== id)
+            });
           }
           return success;
         } catch (error) {
@@ -405,315 +653,160 @@ export const useStore = create<StoreState>()(
           return false;
         }
       },
-      
+
       setProducts: (products: Product[]) => {
         set({ products });
       },
-      
-      // Notification actions
-      addNotification: (notification: Omit<Notification, 'id' | 'createdAt'>) => {
-        const newNotification: Notification = {
-          ...notification,
-          id: Date.now().toString(),
-          createdAt: new Date()
-        };
-        const notifications = get().notifications;
-        set({ notifications: [newNotification, ...notifications] });
-      },
-      
-      markNotificationAsRead: (notificationId: string) => {
-        const notifications = get().notifications;
-        const updatedNotifications = notifications.map(notification =>
-          notification.id === notificationId
-            ? { ...notification, isRead: true }
-            : notification
-        );
-        set({ notifications: updatedNotifications });
-      },
-      
-      clearNotifications: () => {
-        set({ notifications: [] });
-      },
-      
-      getUnreadNotificationCount: () => {
-        const notifications = get().notifications;
-        return notifications.filter(notification => !notification.isRead).length;
-      },
-      
-      // Wishlist actions
-      addToWishlist: (productId: string) => {
-        const currentUser = get().user;
-        if (currentUser) {
-          const wishlist = currentUser.wishlist || [];
-          if (!wishlist.includes(productId)) {
-            const updatedUser = {
-              ...currentUser,
-              wishlist: [...wishlist, productId]
-            };
-            set({ user: updatedUser });
-          }
-        }
-      },
-      
-      removeFromWishlist: (productId: string) => {
-        const currentUser = get().user;
-        if (currentUser && currentUser.wishlist) {
-          const updatedWishlist = currentUser.wishlist.filter(id => id !== productId);
-          const updatedUser = {
-            ...currentUser,
-            wishlist: updatedWishlist
-          };
-          set({ user: updatedUser });
-        }
-      },
-      
-      isInWishlist: (productId: string) => {
-        const currentUser = get().user;
-        return currentUser?.wishlist?.includes(productId) || false;
-      },
-      
-      // Order actions
-      createOrder: (orderData: Omit<Order, 'id' | 'createdAt' | 'updatedAt' | 'statusHistory'>) => {
-        const orderId = Date.now().toString();
-        const newOrder: Order = {
-          ...orderData,
-          id: orderId,
-          createdAt: new Date(),
-          updatedAt: new Date(),
-          statusHistory: [{
-            status: orderData.status,
-            timestamp: new Date(),
-            notes: 'Order created'
-          }]
-        };
-        const orders = get().orders;
-        set({ orders: [...orders, newOrder] });
-        return orderId;
-      },
-      
-      getUserOrders: (userId: string) => {
-        const orders = get().orders;
-        return orders.filter(order => order.userId === userId);
-      },
-      
-      getOrderById: (orderId: string) => {
-        const orders = get().orders;
-        return orders.find(order => order.id === orderId) || null;
-      },
-      
-      updateOrderStatus: (orderId: string, status: Order['status'], notes?: string) => {
-        const orders = get().orders;
-        const updatedOrders = orders.map(order => {
-          if (order.id === orderId) {
-            const statusHistory = [...order.statusHistory, {
-              status,
-              timestamp: new Date(),
-              notes: notes || `Status updated to ${status}`
-            }];
-            return {
-              ...order,
-              status,
-              updatedAt: new Date(),
-              statusHistory
-            };
-          }
-          return order;
-        });
-        set({ orders: updatedOrders });
-      },
-      
-      // Payment actions
-      addPayment: (payment: RazorpayPayment) => {
-        const payments = get().payments;
-        set({ payments: [...payments, payment] });
-      },
-      
-      updatePayment: (paymentId: string, updates: Partial<RazorpayPayment>) => {
-        const payments = get().payments;
-        const updatedPayments = payments.map(payment =>
-          payment.id === paymentId ? { ...payment, ...updates } : payment
-        );
-        set({ payments: updatedPayments });
-      },
-      
-      getPaymentById: (paymentId: string) => {
-        const payments = get().payments;
-        return payments.find(payment => payment.id === paymentId) || null;
-      },
-      
-      getPaymentsByOrder: (orderId: string) => {
-        const payments = get().payments;
-        return payments.filter(payment => payment.orderId === orderId);
-      },
-      
-      getAllPayments: () => {
-        return get().payments;
-      },
-      
-      getPaymentStats: () => {
-        const payments = get().payments;
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        
-        const todayPayments = payments.filter(payment => 
-          new Date(payment.createdAt) >= today
-        );
-        
-        return {
-          total: payments.length,
-          today: todayPayments.length,
-          successful: payments.filter(p => p.status === 'captured').length,
-          failed: payments.filter(p => p.status === 'failed').length,
-          refunded: payments.filter(p => p.status === 'refunded').length,
-          totalAmount: payments.reduce((sum, p) => sum + (p.amount || 0), 0),
-          todayAmount: todayPayments.reduce((sum, p) => sum + (p.amount || 0), 0)
-        };
-      },
-      
+
       // Category actions
       setCategories: (categories: Category[]) => {
         set({ categories });
       },
-      
+
       addCategory: (category: Category) => {
-        const categories = get().categories;
-        set({ categories: [...categories, category] });
+        set({
+          categories: [...get().categories, category]
+        });
       },
-      
+
       updateCategory: (categoryId: string, updates: Partial<Category>) => {
-        const categories = get().categories;
-        const updatedCategories = categories.map(cat =>
-          cat.id === categoryId ? { ...cat, ...updates } : cat
-        );
-        set({ categories: updatedCategories });
+        set({
+          categories: get().categories.map(category =>
+            category.id === categoryId ? { ...category, ...updates } : category
+          )
+        });
       },
-      
+
       deleteCategory: (categoryId: string) => {
-        const categories = get().categories;
-        const updatedCategories = categories.filter(cat => cat.id !== categoryId);
-        set({ categories: updatedCategories });
+        set({
+          categories: get().categories.filter(category => category.id !== categoryId)
+        });
       },
-      
+
       // Theme actions
       setThemes: (themes: Theme[]) => {
         set({ themes });
       },
-      
+
       addTheme: (theme: Theme) => {
-        const themes = get().themes;
-        set({ themes: [...themes, theme] });
+        set({
+          themes: [...get().themes, theme]
+        });
       },
-      
+
       updateTheme: (themeId: string, updates: Partial<Theme>) => {
-        const themes = get().themes;
-        const updatedThemes = themes.map(theme =>
-          theme.id === themeId ? { ...theme, ...updates } : theme
-        );
-        set({ themes: updatedThemes });
+        set({
+          themes: get().themes.map(theme =>
+            theme.id === themeId ? { ...theme, ...updates } : theme
+          )
+        });
       },
-      
+
       deleteTheme: (themeId: string) => {
-        const themes = get().themes;
-        const updatedThemes = themes.filter(theme => theme.id !== themeId);
-        set({ themes: updatedThemes });
+        set({
+          themes: get().themes.filter(theme => theme.id !== themeId)
+        });
       },
-      
+
       setActiveTheme: (themeId: string) => {
-        const themes = get().themes;
-        const updatedThemes = themes.map(theme => ({
-          ...theme,
-          isActive: theme.id === themeId
-        }));
-        set({ themes: updatedThemes });
+        set({
+          themes: get().themes.map(theme => ({
+            ...theme,
+            isActive: theme.id === themeId
+          }))
+        });
       },
-      
+
       // Story actions
       setStories: (stories: Story[]) => {
         set({ stories });
       },
-      
+
       addStory: (story: Story) => {
-        const stories = get().stories;
-        set({ stories: [...stories, story] });
+        set({
+          stories: [...get().stories, story]
+        });
       },
-      
+
       updateStory: (storyId: string, updates: Partial<Story>) => {
-        const stories = get().stories;
-        const updatedStories = stories.map(story =>
-          story.id === storyId ? { ...story, ...updates } : story
-        );
-        set({ stories: updatedStories });
+        set({
+          stories: get().stories.map(story =>
+            story.id === storyId ? { ...story, ...updates } : story
+          )
+        });
       },
-      
+
       deleteStory: (storyId: string) => {
-        const stories = get().stories;
-        const updatedStories = stories.filter(story => story.id !== storyId);
-        set({ stories: updatedStories });
+        set({
+          stories: get().stories.filter(story => story.id !== storyId)
+        });
       },
-      
+
       reorderStories: (stories: Story[]) => {
         set({ stories });
       },
-      
+
       // Banner actions
       setBanners: (banners: Banner[]) => {
         set({ banners });
       },
-      
+
       addBanner: (banner: Banner) => {
-        const banners = get().banners;
-        set({ banners: [...banners, banner] });
+        set({
+          banners: [...get().banners, banner]
+        });
       },
-      
+
       updateBanner: (bannerId: string, updates: Partial<Banner>) => {
-        const banners = get().banners;
-        const updatedBanners = banners.map(banner =>
-          banner.id === bannerId ? { ...banner, ...updates } : banner
-        );
-        set({ banners: updatedBanners });
+        set({
+          banners: get().banners.map(banner =>
+            banner.id === bannerId ? { ...banner, ...updates } : banner
+          )
+        });
       },
-      
+
       deleteBanner: (bannerId: string) => {
-        const banners = get().banners;
-        const updatedBanners = banners.filter(banner => banner.id !== bannerId);
-        set({ banners: updatedBanners });
+        set({
+          banners: get().banners.filter(banner => banner.id !== bannerId)
+        });
       },
-      
+
       reorderBanners: (banners: Banner[]) => {
         set({ banners });
       },
-      
-      // Filter actions
+
+      // Filter and search actions
       setFilters: (filters: Partial<Filter>) => {
-        const currentFilters = get().filters;
-        set({ filters: { ...currentFilters, ...filters } });
+        set({
+          filters: { ...get().filters, ...filters }
+        });
       },
-      
+
       setSearchQuery: (query: string) => {
         set({ searchQuery: query });
       },
-      
+
       // UI actions
       setMobileMenuOpen: (open: boolean) => {
         set({ mobileMenuOpen: open });
       },
-      
+
       setFilterDrawerOpen: (open: boolean) => {
         set({ filterDrawerOpen: open });
       },
-      
+
       setOrders: (orders: Order[]) => {
         set({ orders });
       },
-      
+
       setSelectedOrder: (order: Order | null) => {
         set({ selectedOrder: order });
       },
-      
+
       setUser: (user: User) => {
         set({ user });
       },
-      
+
       // Landing settings actions
       loadLandingSettings: async () => {
         try {
@@ -723,7 +816,7 @@ export const useStore = create<StoreState>()(
           console.error('Failed to load landing settings:', error);
         }
       },
-      
+
       updateLandingSettings: async (settings: Partial<LandingSettings>) => {
         try {
           const updatedSettings = await landingSettingsService.updateLandingSettings(settings);
@@ -733,7 +826,6 @@ export const useStore = create<StoreState>()(
           throw error;
         }
       }
-
     }),
     {
       name: 'ikkat-store',
