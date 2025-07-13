@@ -27,7 +27,8 @@ function App() {
     initializeApp, 
     isAuthenticated, 
     isLoadingProducts, 
-    isInitialized 
+    isInitialized,
+    landingSettings
   } = useStore();
 
   // Initialize app on mount
