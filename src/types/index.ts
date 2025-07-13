@@ -126,7 +126,6 @@ export interface LandingSettings {
   ctaLink?: string;
   showFeaturedProducts?: boolean;
   showCategories?: boolean;
-  deliveryLocation?: string;
   topBannerText?: string;
   topBannerActive?: boolean;
   siteLogoUrl?: string;
