@@ -304,7 +304,7 @@ const BannersManagementPage: React.FC<BannersManagementPageProps> = ({ onBack })
                   {/* Left Column */}
                   <div className="space-y-4">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                      <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center">
                         <Type className="w-4 h-4 inline mr-1" />
                         Title
                       </label>
@@ -319,7 +319,8 @@ const BannersManagementPage: React.FC<BannersManagementPageProps> = ({ onBack })
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                      <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center">
+                        <Type className="w-4 h-4 inline mr-1 opacity-50" />
                         Subtitle
                       </label>
                       <input
@@ -332,7 +333,8 @@ const BannersManagementPage: React.FC<BannersManagementPageProps> = ({ onBack })
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                      <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center">
+                        <Type className="w-4 h-4 inline mr-1 opacity-50" />
                         Button Text
                       </label>
                       <input
@@ -345,7 +347,7 @@ const BannersManagementPage: React.FC<BannersManagementPageProps> = ({ onBack })
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                      <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center">
                         <Link className="w-4 h-4 inline mr-1" />
                         Button Link
                       </label>
@@ -366,17 +368,28 @@ const BannersManagementPage: React.FC<BannersManagementPageProps> = ({ onBack })
                         <Upload className="w-4 h-4 inline mr-1" />
                         Banner Image
                       </label>
-                      <DragDropImageUpload 
-                        onImageUpload={(url) => setFormData({ ...formData, image: url })}
-                      />
-                      <div className="mt-2">
-                        <input
-                          type="url"
-                          value={formData.image}
-                          onChange={(e) => setFormData({ ...formData, image: e.target.value })}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm"
-                          placeholder="Or enter image URL"
+                      <div className="space-y-4">
+                        <DragDropImageUpload 
+                          onImageUpload={(url) => setFormData({ ...formData, image: url })}
+                          currentImage={formData.image}
                         />
+                        <div className="flex items-center space-x-2">
+                          <div className="h-px bg-gray-200 flex-grow"></div>
+                          <span className="text-sm text-gray-500">OR</span>
+                          <div className="h-px bg-gray-200 flex-grow"></div>
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Enter Image URL
+                          </label>
+                          <input
+                            type="url"
+                            value={formData.image}
+                            onChange={(e) => setFormData({ ...formData, image: e.target.value })}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                            placeholder="https://example.com/image.jpg"
+                          />
+                        </div>
                       </div>
                     </div>
 

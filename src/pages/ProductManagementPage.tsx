@@ -851,12 +851,64 @@ const ProductManagementPage: React.FC<ProductManagementPageProps> = ({ onBack })
                     Product Images
                   </h4>
                   
-                  <DragDropImageUpload
-                    images={formData.images || []}
-                    onImagesChange={(images) => setFormData({ ...formData, images })}
-                    maxImages={10}
-                    maxSizePerImage={5}
-                  />
+                  {/* This component needs to be updated to handle multiple images */}
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    {(formData.images || []).map((image, index) => (
+                      <div key={index} className="relative aspect-square bg-gray-100 rounded-xl overflow-hidden">
+                        <img
+                          src={image}
+                          alt={`Product ${index + 1}`}
+                          className="w-full h-full object-cover"
+                        />
+                        <div className="absolute top-2 right-2">
+                          <button
+                            onClick={() => {
+                              const newImages = [...(formData.images || [])];
+                              newImages.splice(index, 1);
+                              setFormData({ ...formData, images: newImages });
+                            }}
+                            className="p-1 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors"
+                          >
+                            <X className="h-4 w-4" />
+                          </button>
+                        </div>
+                        {index === 0 && (
+                          <div className="absolute top-2 left-2 bg-green-500 text-white text-xs font-bold px-2 py-1 rounded-full">
+                            Primary
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                    
+                    {/* Add image button */}
+                    <div 
+                      className="aspect-square border-2 border-dashed border-gray-300 rounded-xl flex flex-col items-center justify-center cursor-pointer hover:border-purple-400 hover:bg-purple-50 transition-all"
+                      onClick={() => {
+                        // Open file dialog
+                        const input = document.createElement('input');
+                        input.type = 'file';
+                        input.accept = 'image/*';
+                        input.onchange = (e) => {
+                          const file = (e.target as HTMLInputElement).files?.[0];
+                          if (file) {
+                            const reader = new FileReader();
+                            reader.onload = () => {
+                              const imageUrl = reader.result as string;
+                              setFormData({ 
+                                ...formData, 
+                                images: [...(formData.images || []), imageUrl] 
+                              });
+                            };
+                            reader.readAsDataURL(file);
+                          }
+                        };
+                        input.click();
+                      }}
+                    >
+                      <Plus className="h-8 w-8 text-gray-400" />
+                      <span className="text-sm text-gray-500 mt-2">Add Image</span>
+                    </div>
+                  </div>
                 </div>
 
                 {/* Variants */}

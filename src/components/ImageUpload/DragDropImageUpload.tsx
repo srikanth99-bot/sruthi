@@ -11,16 +11,16 @@ import {
 } from 'lucide-react';
 
 interface DragDropImageUploadProps {
-  images: string[];
-  onImagesChange: (images: string[]) => void;
+  onImageUpload: (imageUrl: string) => void;
+  currentImage?: string;
   maxImages?: number;
   maxSizePerImage?: number; // in MB
   acceptedFormats?: string[];
 }
 
 const DragDropImageUpload: React.FC<DragDropImageUploadProps> = ({
-  images,
-  onImagesChange,
+  onImageUpload,
+  currentImage,
   maxImages = 10,
   maxSizePerImage = 5,
   acceptedFormats = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp']
@@ -84,11 +84,8 @@ const DragDropImageUpload: React.FC<DragDropImageUploadProps> = ({
       const error = validateFile(file);
       if (error) {
         newErrors.push(error);
-      } else if (images.length + validFiles.length < maxImages) {
-        validFiles.push(file);
       } else {
-        newErrors.push(`Maximum ${maxImages} images allowed.`);
-        break;
+        validFiles.push(file);
       }
     }
 
@@ -99,15 +96,18 @@ const DragDropImageUpload: React.FC<DragDropImageUploadProps> = ({
     setIsUploading(true);
 
     try {
-      const uploadPromises = validFiles.map(async (file) => {
-        // Simulate upload progress
-        await simulateUpload(file.name);
-        // Convert to base64 for demo (in production, upload to your server/cloud)
-        return await convertFileToBase64(file);
-      });
+      // Just process the first file
+      const file = validFiles[0];
+      
+      // Simulate upload progress
+      await simulateUpload(file.name);
+      
+      // Convert to base64 for demo (in production, upload to your server/cloud)
+      const imageUrl = await convertFileToBase64(file);
+      
+      // Call the callback with the new image URL
+      onImageUpload(imageUrl);
 
-      const newImageUrls = await Promise.all(uploadPromises);
-      onImagesChange([...images, ...newImageUrls]);
     } catch (error) {
       setErrors(['Upload failed. Please try again.']);
     } finally {
@@ -132,7 +132,7 @@ const DragDropImageUpload: React.FC<DragDropImageUploadProps> = ({
     if (files.length > 0) {
       processFiles(files);
     }
-  }, [images, maxImages]);
+  }, []);
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
@@ -143,18 +143,6 @@ const DragDropImageUpload: React.FC<DragDropImageUploadProps> = ({
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
-  };
-
-  const removeImage = (index: number) => {
-    const newImages = images.filter((_, i) => i !== index);
-    onImagesChange(newImages);
-  };
-
-  const reorderImages = (fromIndex: number, toIndex: number) => {
-    const newImages = [...images];
-    const [movedImage] = newImages.splice(fromIndex, 1);
-    newImages.splice(toIndex, 0, movedImage);
-    onImagesChange(newImages);
   };
 
   return (
@@ -183,7 +171,7 @@ const DragDropImageUpload: React.FC<DragDropImageUploadProps> = ({
         <div className="space-y-4">
           <motion.div
             animate={{ scale: isDragOver ? 1.1 : 1 }}
-            className={`mx-auto w-16 h-16 rounded-full flex items-center justify-center ${
+            className={`mx-auto w-20 h-20 rounded-full flex items-center justify-center ${
               isDragOver ? 'bg-purple-500' : 'bg-gray-100'
             }`}
           >
@@ -196,13 +184,10 @@ const DragDropImageUpload: React.FC<DragDropImageUploadProps> = ({
 
           <div>
             <h3 className={`text-lg font-bold ${isDragOver ? 'text-purple-600' : 'text-gray-900'}`}>
-              {isUploading ? 'Uploading Images...' : 'Drop images here or click to browse'}
+              {isUploading ? 'Uploading Image...' : 'Drop image here or click to browse'}
             </h3>
             <p className="text-gray-600 mt-2">
               Support for JPG, PNG, WebP up to {maxSizePerImage}MB each
-            </p>
-            <p className="text-sm text-gray-500 mt-1">
-              Maximum {maxImages} images • {images.length}/{maxImages} uploaded
             </p>
           </div>
 
@@ -259,69 +244,33 @@ const DragDropImageUpload: React.FC<DragDropImageUploadProps> = ({
       </AnimatePresence>
 
       {/* Image Preview Grid */}
-      {images.length > 0 && (
+      {currentImage && (
         <div className="space-y-4">
           <div className="flex items-center justify-between">
-            <h4 className="font-semibold text-gray-900">Uploaded Images</h4>
-            <span className="text-sm text-gray-500">{images.length} image{images.length !== 1 ? 's' : ''}</span>
+            <h4 className="font-semibold text-gray-900">Current Image</h4>
           </div>
 
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-            {images.map((image, index) => (
-              <motion.div
-                key={index}
-                initial={{ opacity: 0, scale: 0.8 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.8 }}
-                className="relative group aspect-square bg-gray-100 rounded-xl overflow-hidden"
-              >
-                <img
-                  src={image}
-                  alt={`Product ${index + 1}`}
-                  className="w-full h-full object-cover"
-                />
-
-                {/* Image Overlay */}
-                <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-40 transition-all duration-200 flex items-center justify-center">
-                  <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex space-x-2">
-                    {/* Remove Button */}
-                    <motion.button
-                      whileHover={{ scale: 1.1 }}
-                      whileTap={{ scale: 0.9 }}
-                      onClick={() => removeImage(index)}
-                      className="p-2 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors"
-                    >
-                      <X className="h-4 w-4" />
-                    </motion.button>
-                  </div>
-                </div>
-
-                {/* Primary Image Badge */}
-                {index === 0 && (
-                  <div className="absolute top-2 left-2 bg-green-500 text-white text-xs font-bold px-2 py-1 rounded-full">
-                    Primary
-                  </div>
-                )}
-
-                {/* Image Number */}
-                <div className="absolute bottom-2 right-2 bg-black bg-opacity-60 text-white text-xs font-medium px-2 py-1 rounded-full">
-                  {index + 1}
-                </div>
-              </motion.div>
-            ))}
-
-            {/* Add More Button */}
-            {images.length < maxImages && (
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={() => fileInputRef.current?.click()}
-                className="aspect-square border-2 border-dashed border-gray-300 rounded-xl flex flex-col items-center justify-center text-gray-500 hover:border-purple-400 hover:text-purple-600 transition-all duration-200"
-              >
-                <Plus className="h-8 w-8 mb-2" />
-                <span className="text-sm font-medium">Add More</span>
-              </motion.button>
-            )}
+          <div className="relative aspect-square bg-gray-100 rounded-xl overflow-hidden">
+            <img
+              src={currentImage}
+              alt="Banner image"
+              className="w-full h-full object-cover"
+            />
+            
+            {/* Image Overlay */}
+            <div className="absolute inset-0 bg-black bg-opacity-0 hover:bg-opacity-40 transition-all duration-200 flex items-center justify-center">
+              <div className="opacity-0 hover:opacity-100 transition-opacity duration-200 flex space-x-2">
+                {/* Change Button */}
+                <motion.button
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.9 }}
+                  onClick={() => fileInputRef.current?.click()}
+                  className="p-3 bg-purple-500 text-white rounded-full hover:bg-purple-600 transition-colors"
+                >
+                  <Upload className="h-5 w-5" />
+                </motion.button>
+              </div>
+            </div>
           </div>
 
           {/* Image Tips */}
@@ -331,9 +280,8 @@ const DragDropImageUpload: React.FC<DragDropImageUploadProps> = ({
               <div className="text-sm text-blue-800">
                 <h5 className="font-semibold mb-1">Image Tips:</h5>
                 <ul className="space-y-1">
-                  <li>• First image will be used as the primary product image</li>
                   <li>• Use high-quality images with good lighting</li>
-                  <li>• Show different angles and details of the product</li>
+                  <li>• Banner images should be at least 1200×400 pixels</li>
                   <li>• Recommended size: 1000x1000 pixels or higher</li>
                 </ul>
               </div>
