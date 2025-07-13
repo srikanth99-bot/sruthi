@@ -76,30 +76,10 @@ const Header: React.FC<HeaderProps> = ({ isAdmin = false }) => {
       </div>
 
       <motion.header 
-        initial={{ y: -100 }}
+      <motion.header
         animate={{ y: 0 }}
         className="sticky top-0 z-50 bg-white/95 backdrop-blur-lg border-b border-gray-200/50 shadow-lg"
       >
-        {/* Location Bar */}
-        <div className="border-b border-gray-100">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex items-center justify-between h-10 text-sm">
-              <div className="flex items-center space-x-2 text-gray-600">
-                <MapPin className="h-4 w-4 text-purple-500" />
-                <span>Deliver to:</span>
-                <button className="flex items-center space-x-1 font-medium text-gray-900 hover:text-purple-600 transition-colors">
-                  <span>Bangalore 560001</span>
-                  <ChevronDown className="h-3 w-3" />
-                </button>
-              </div>
-              <div className="hidden md:flex items-center space-x-4 text-gray-600">
-                <span>📞 24/7 Support</span>
-                <span>🚚 Same Day Delivery</span>
-              </div>
-            </div>
-          </div>
-        </div>
-
         {/* Main Header */}
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
