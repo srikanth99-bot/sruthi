@@ -76,7 +76,7 @@ const Header: React.FC<HeaderProps> = ({ isAdmin = false }) => {
       </div>
 
       <motion.header 
-      <motion.header
+        initial={{ y: -100 }}
         animate={{ y: 0 }}
         className="sticky top-0 z-50 bg-white/95 backdrop-blur-lg border-b border-gray-200/50 shadow-lg"
       >
