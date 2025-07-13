@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Star, ArrowRight, Play, Sparkles, Heart, ShoppingBag, Zap, TrendingUp, Siren as Fire, Crown, Eye, Plus } from 'lucide-react';
+import { Star, ArrowRight, Play, Sparkles, Heart, ShoppingBag, Zap, TrendingUp, Siren as Fire, Crown, Eye, Plus, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useStore } from '../store/useStore';
 
 interface HomePageProps {
@@ -8,15 +8,17 @@ interface HomePageProps {
 }
 
 const HomePage: React.FC<HomePageProps> = ({ onCategoryClick }) => {
-  const { addToCart, banners, landingSettings, products } = useStore();
+  const { addToCart, banners, landingSettings, products, updateBanner } = useStore();
   const [activeCategory, setActiveCategory] = useState('All');
   const [currentBanner, setCurrentBanner] = useState(0);
+  const [isManualTransition, setIsManualTransition] = useState(false);
 
   const activeBanners = banners.filter(banner => banner.isActive).sort((a, b) => a.sortOrder - b.sortOrder);
 
   // Use landing settings for categories if available
   const categoryNames = landingSettings?.categoriesList || ['Sarees', 'Frocks', 'Kurtas', 'Lehengas', 'Dress Materials', 'Blouses'];
   
+  // Auto-slide banners
   const categories = [
     { id: 'All', name: 'All', icon: '🔥', count: products.length },
     ...categoryNames.map(cat => ({
@@ -50,12 +52,30 @@ const HomePage: React.FC<HomePageProps> = ({ onCategoryClick }) => {
 
   useEffect(() => {
     if (activeBanners.length > 1) {
-      const timer = setInterval(() => {
-        setCurrentBanner((prev) => (prev + 1) % activeBanners.length);
-      }, 8000);
-      return () => clearInterval(timer);
+      let timer: NodeJS.Timeout;
+      
+      if (!isManualTransition) {
+        timer = setInterval(() => {
+          setCurrentBanner((prev) => (prev + 1) % activeBanners.length);
+        }, 5000); // Change banner every 5 seconds
+      }
+      
+      return () => {
+        if (timer) clearInterval(timer);
+      };
     }
-  }, [activeBanners.length]);
+  }, [activeBanners.length, isManualTransition, currentBanner]);
+  
+  // Reset manual transition flag after a delay
+  useEffect(() => {
+    if (isManualTransition) {
+      const timer = setTimeout(() => {
+        setIsManualTransition(false);
+      }, 5000); // Resume auto-sliding after 5 seconds of inactivity
+      
+      return () => clearTimeout(timer);
+    }
+  }, [isManualTransition, currentBanner]);
 
   const handleBannerClick = (banner: any) => {
     if (banner.linkType === 'category' && banner.linkValue) {
@@ -63,6 +83,18 @@ const HomePage: React.FC<HomePageProps> = ({ onCategoryClick }) => {
     } else if (banner.linkType === 'collection' && banner.linkValue) {
       onCategoryClick(banner.linkValue);
     }
+  };
+
+  const goToPrevBanner = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setIsManualTransition(true);
+    setCurrentBanner((prev) => (prev - 1 + activeBanners.length) % activeBanners.length);
+  };
+
+  const goToNextBanner = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setIsManualTransition(true);
+    setCurrentBanner((prev) => (prev + 1) % activeBanners.length);
   };
 
   const getBannerHeight = (height: string) => {
@@ -78,85 +110,106 @@ const HomePage: React.FC<HomePageProps> = ({ onCategoryClick }) => {
       {/* Dynamic Banners Section */}
       {activeBanners.length > 0 && (
         <div className="px-4 mb-6">
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={currentBanner}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              transition={{ duration: 0.8 }}
-              className={`relative ${getBannerHeight(activeBanners[currentBanner].height)} bg-gradient-to-br ${activeBanners[currentBanner].gradient} rounded-3xl overflow-hidden cursor-pointer`}
-              onClick={() => handleBannerClick(activeBanners[currentBanner])}
-            >
-              {/* Background Image */}
-              {activeBanners[currentBanner].image && (
-                <img
-                  src={activeBanners[currentBanner].image}
-                  alt={activeBanners[currentBanner].title}
-                  className="absolute inset-0 w-full h-full object-cover opacity-30"
-                />
-              )}
-              
-              {/* Gradient Overlay */}
-              <div className="absolute inset-0 bg-black/20" />
-              
-              {/* Content */}
-              <div className="absolute inset-0 p-6 flex flex-col justify-between">
-                <div>
-                  {activeBanners[currentBanner].showIcon && activeBanners[currentBanner].icon && (
-                    <div className="flex items-center space-x-2 mb-2">
-                      <span className="text-2xl">{activeBanners[currentBanner].icon}</span>
-                      <span className={`${activeBanners[currentBanner].textColor} font-bold text-sm`}>
-                        {activeBanners[currentBanner].subtitle}
-                      </span>
-                    </div>
-                  )}
-                  <h2 className={`text-2xl font-black ${activeBanners[currentBanner].textColor} mb-2`}>
-                    {activeBanners[currentBanner].title}
-                  </h2>
-                  {activeBanners[currentBanner].description && (
-                    <p className={`${activeBanners[currentBanner].textColor}/90 text-sm`}>
-                      {activeBanners[currentBanner].description}
-                    </p>
-                  )}
-                </div>
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  className={`self-start ${activeBanners[currentBanner].buttonColor} font-bold px-6 py-3 rounded-xl shadow-lg`}
+          <div className="relative">
+            {/* Navigation Arrows */}
+            {activeBanners.length > 1 && (
+              <>
+                <button 
+                  onClick={goToPrevBanner}
+                  className="absolute left-4 top-1/2 transform -translate-y-1/2 z-20 bg-white/30 backdrop-blur-sm p-2 rounded-full hover:bg-white/50 transition-colors"
                 >
-                  {activeBanners[currentBanner].buttonText}
-                </motion.button>
-              </div>
-              
-              {/* Decorative Elements */}
-              <div className="absolute top-4 right-4">
-                <div className="w-16 h-16 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center">
-                  <Sparkles className="h-8 w-8 text-white" />
+                  <ChevronLeft className="h-6 w-6 text-white" />
+                </button>
+                <button 
+                  onClick={goToNextBanner}
+                  className="absolute right-4 top-1/2 transform -translate-y-1/2 z-20 bg-white/30 backdrop-blur-sm p-2 rounded-full hover:bg-white/50 transition-colors"
+                >
+                  <ChevronRight className="h-6 w-6 text-white" />
+                </button>
+              </>
+            )}
+            
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={currentBanner}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+                transition={{ duration: 0.8 }}
+                className={`relative ${getBannerHeight(activeBanners[currentBanner].height)} bg-gradient-to-br ${activeBanners[currentBanner].gradient} rounded-3xl overflow-hidden cursor-pointer`}
+                onClick={() => handleBannerClick(activeBanners[currentBanner])}
+              >
+                {/* Background Image */}
+                {activeBanners[currentBanner].image && (
+                  <img
+                    src={activeBanners[currentBanner].image}
+                    alt={activeBanners[currentBanner].title}
+                    className="absolute inset-0 w-full h-full object-cover opacity-30"
+                  />
+                )}
+                
+                {/* Gradient Overlay */}
+                <div className="absolute inset-0 bg-black/20" />
+                
+                {/* Content */}
+                <div className="absolute inset-0 p-6 flex flex-col justify-between">
+                  <div>
+                    {activeBanners[currentBanner].showIcon && activeBanners[currentBanner].icon && (
+                      <div className="flex items-center space-x-2 mb-2">
+                        <span className="text-2xl">{activeBanners[currentBanner].icon}</span>
+                        <span className={`${activeBanners[currentBanner].textColor} font-bold text-sm`}>
+                          {activeBanners[currentBanner].subtitle}
+                        </span>
+                      </div>
+                    )}
+                    <h2 className={`text-2xl font-black ${activeBanners[currentBanner].textColor} mb-2`}>
+                      {activeBanners[currentBanner].title}
+                    </h2>
+                    {activeBanners[currentBanner].description && (
+                      <p className={`${activeBanners[currentBanner].textColor}/90 text-sm`}>
+                        {activeBanners[currentBanner].description}
+                      </p>
+                    )}
+                  </div>
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    className={`self-start ${activeBanners[currentBanner].buttonColor} font-bold px-6 py-3 rounded-xl shadow-lg`}
+                  >
+                    {activeBanners[currentBanner].buttonText}
+                  </motion.button>
                 </div>
-              </div>
+                
+                {/* Decorative Elements */}
+                <div className="absolute top-4 right-4">
+                  <div className="w-16 h-16 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center">
+                    <Sparkles className="h-8 w-8 text-white" />
+                  </div>
+                </div>
 
-              {/* Banner Indicators */}
-              {activeBanners.length > 1 && (
-                <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex space-x-2">
-                  {activeBanners.map((_, index) => (
-                    <button
-                      key={index}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setCurrentBanner(index);
-                      }}
-                      className={`w-2 h-2 rounded-full transition-all ${
-                        index === currentBanner 
-                          ? 'bg-white w-6' 
-                          : 'bg-white/50'
-                      }`}
-                    />
-                  ))}
-                </div>
-              )}
-            </motion.div>
-          </AnimatePresence>
+                {/* Banner Indicators */}
+                {activeBanners.length > 1 && (
+                  <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex space-x-2">
+                    {activeBanners.map((_, index) => (
+                      <button
+                        key={index}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setIsManualTransition(true);
+                          setCurrentBanner(index);
+                        }}
+                        className={`w-2 h-2 rounded-full transition-all ${
+                          index === currentBanner 
+                            ? 'bg-white w-6' 
+                            : 'bg-white/50'
+                        }`}
+                      />
+                    ))}
+                  </div>
+                )}
+              </motion.div>
+            </AnimatePresence>
+          </div>
         </div>
       )}
 

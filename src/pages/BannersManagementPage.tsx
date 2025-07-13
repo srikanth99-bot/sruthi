@@ -29,9 +29,39 @@ import {
   ChevronDown,
   Percent,
   Type,
+  Sparkles,
+  Upload
+  Plus, 
+  Edit, 
+  Trash2, 
+  Save, 
+  X, 
+  Target,
+  Eye,
+  EyeOff,
+  Search,
+  Grid,
+  List,
+  Settings,
+  Copy,
+  Move,
+  AlertCircle,
+  Check,
+  Image as ImageIcon,
+  Link,
+  Palette,
+  Clock,
+  Calendar,
+  ToggleLeft,
+  ToggleRight,
+  ChevronUp,
+  ChevronDown,
+  Percent,
+  Type,
   Sparkles
 } from 'lucide-react';
 import { useStore } from '../store/useStore';
+import DragDropImageUpload from '../components/ImageUpload/DragDropImageUpload';
 import type { Banner } from '../types';
 
 interface BannersManagementPageProps {
@@ -57,6 +87,7 @@ const BannersManagementPage: React.FC<BannersManagementPageProps> = ({ onBack })
     subtitle: '',
     description: '',
     image: '',
+    backgroundImage: '',
     gradient: 'from-purple-600 via-pink-600 to-red-500',
     textColor: 'text-white',
     buttonText: 'Shop Now',
@@ -496,6 +527,15 @@ const BannersManagementPage: React.FC<BannersManagementPageProps> = ({ onBack })
                 <div>
                   <h1 className="text-2xl font-bold text-gray-900">Banners Management</h1>
                   <p className="text-sm text-gray-500">{banners.length} banners • {banners.filter(b => b.isActive).length} active</p>
+                  </label>
+                  </div>
+                  <p className="text-sm text-gray-500 mt-2">Or enter image URL directly:</p>
+                  <input
+                    type="url"
+                    value={formData.image}
+                    onChange={(e) => setFormData({ ...formData, image: e.target.value })}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    placeholder="https://example.com/image.jpg"
                 </div>
               </div>
             </div>
