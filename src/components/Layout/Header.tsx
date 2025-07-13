@@ -64,15 +64,29 @@ const Header: React.FC<HeaderProps> = ({ isAdmin = false }) => {
   return (
     <>
       {/* Top Banner */}
-      <div className="bg-gradient-to-r from-purple-600 via-pink-600 to-red-500 text-white text-center py-2 text-sm font-medium">
-        <motion.div
-          key={landingSettings?.topBannerText || 'default-banner'}
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          className="flex items-center justify-center space-x-2"
-        >
-          <span>{landingSettings?.topBannerText || '🎉 Grand Opening Sale - Up to 70% OFF | Free Shipping on Orders ₹1999+'}</span>
-        </motion.div>
+      <div className="bg-black text-white py-2 text-sm">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between h-10 text-sm">
+            <div className="flex items-center space-x-2 text-white">
+              <MapPin className="h-4 w-4 text-purple-400" />
+              <span>Deliver to:</span>
+              <button className="flex items-center space-x-1 font-medium text-white hover:text-purple-300 transition-colors">
+                <span>{landingSettings?.deliveryLocation || 'Bangalore 560001'}</span>
+                <ChevronDown className="h-3 w-3" />
+              </button>
+            </div>
+            <div className="flex items-center space-x-6 text-white">
+              <div className="flex items-center space-x-2">
+                <span className="text-red-400">📞</span>
+                <span>24/7 Support</span>
+              </div>
+              <div className="flex items-center space-x-2">
+                <span className="text-red-400">🚚</span>
+                <span>Same Day Delivery</span>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
 
       <motion.header 

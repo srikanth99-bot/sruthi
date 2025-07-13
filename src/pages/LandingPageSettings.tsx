@@ -124,6 +124,19 @@ const LandingPageSettings: React.FC<LandingPageSettingsProps> = ({ onBack }) => 
                 </div>
               </div>
             </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Default Delivery Location
+              </label>
+              <input
+                type="text"
+                value={formData.deliveryLocation || ''}
+                onChange={(e) => handleChange('deliveryLocation', e.target.value)}
+                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                placeholder="e.g., Bangalore 560001"
+              />
+            </div>
           </div>
         </div>
       </div>
@@ -264,11 +277,18 @@ const LandingPageSettings: React.FC<LandingPageSettingsProps> = ({ onBack }) => 
             {/* Preview */}
             <div className="mt-4">
               <p className="text-sm font-medium text-gray-700 mb-2">Preview:</p>
-              <div className={`bg-gradient-to-r from-purple-600 via-pink-600 to-red-500 text-white text-center py-2 text-sm font-medium rounded-lg ${
+              <div className={`bg-black text-white py-2 text-sm font-medium rounded-lg ${
                 !formData.topBannerActive && 'opacity-50'
               }`}>
-                <div className="flex items-center justify-center space-x-2">
-                  <span>{formData.topBannerText || 'Banner text will appear here'}</span>
+                <div className="flex items-center justify-between px-4">
+                  <div className="flex items-center space-x-2">
+                    <MapPin className="h-4 w-4 text-purple-400" />
+                    <span>Deliver to: {formData.deliveryLocation || 'Bangalore 560001'}</span>
+                  </div>
+                  <div className="flex items-center space-x-4">
+                    <span>📞 24/7 Support</span>
+                    <span>🚚 Same Day Delivery</span>
+                  </div>
                 </div>
               </div>
             </div>
