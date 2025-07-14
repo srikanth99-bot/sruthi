@@ -12,25 +12,25 @@
     font-family: 'Inter', system-ui, sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-    background-color: #f9fafb;
+    background-color: #ffffff;
   }
 }
 
 @layer components {
   .btn-primary {
-    @apply bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-bold py-3 px-6 rounded-2xl transition-all duration-200 active:scale-95 shadow-lg hover:shadow-xl;
+    @apply bg-pink-500 hover:bg-pink-600 text-white font-bold py-3 px-6 rounded-xl transition-all duration-200 active:scale-95 shadow-lg hover:shadow-xl;
   }
   
   .btn-secondary {
-    @apply bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white font-bold py-3 px-6 rounded-2xl transition-all duration-200 active:scale-95 shadow-lg hover:shadow-xl;
+    @apply bg-pink-100 text-pink-600 hover:bg-pink-200 font-bold py-3 px-6 rounded-xl transition-all duration-200 active:scale-95;
   }
   
   .card {
-    @apply bg-white rounded-3xl shadow-xl border border-gray-100 p-6 transition-all duration-200 hover:shadow-2xl hover:-translate-y-1;
+    @apply bg-white rounded-2xl shadow-sm border border-pink-100 p-6 transition-all duration-200 hover:shadow-md hover:-translate-y-1;
   }
   
   .input-field {
-    @apply w-full px-4 py-3 border border-gray-300 rounded-2xl focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 bg-white;
+    @apply w-full px-4 py-3 border border-pink-200 rounded-xl focus:ring-2 focus:ring-pink-400 focus:border-transparent transition-all duration-200 bg-white;
   }
 
   .scrollbar-hide {

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Star, ArrowRight, Play, Sparkles, Heart, ShoppingBag, Zap, TrendingUp, Siren as Fire, Crown, Eye, Plus, ChevronLeft, ChevronRight } from 'lucide-react';
+import { ArrowRight, Star, Heart, ShoppingBag, Eye, Plus, ChevronLeft, ChevronRight, Sparkles } from 'lucide-react';
 import { useStore } from '../store/useStore';
 
 interface HomePageProps {
@@ -106,243 +106,162 @@ const HomePage: React.FC<HomePageProps> = ({ onCategoryClick }) => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Dynamic Banners Section */}
-      {activeBanners.length > 0 && (
-        <div className="px-4 mb-6">
-          <div className="relative">
-            {/* Navigation Arrows */}
-            {activeBanners.length > 1 && (
-              <>
-                <button 
-                  onClick={goToPrevBanner}
-                  className="absolute left-4 top-1/2 transform -translate-y-1/2 z-20 bg-white/30 backdrop-blur-sm p-2 rounded-full hover:bg-white/50 transition-colors"
-                >
-                  <ChevronLeft className="h-6 w-6 text-white" />
-                </button>
-                <button 
-                  onClick={goToNextBanner}
-                  className="absolute right-4 top-1/2 transform -translate-y-1/2 z-20 bg-white/30 backdrop-blur-sm p-2 rounded-full hover:bg-white/50 transition-colors"
-                >
-                  <ChevronRight className="h-6 w-6 text-white" />
-                </button>
-              </>
-            )}
-            
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={currentBanner}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -20 }}
-                transition={{ duration: 0.8 }}
-                className={`relative ${getBannerHeight(activeBanners[currentBanner].height)} bg-gradient-to-br ${activeBanners[currentBanner].gradient} rounded-3xl overflow-hidden cursor-pointer`}
-                onClick={() => handleBannerClick(activeBanners[currentBanner])}
+    <div className="min-h-screen bg-white">
+      {/* Hero Banner Section */}
+      <div className="px-4 py-6 mb-6">
+        <div className="relative">
+          {/* Navigation Arrows */}
+          {activeBanners.length > 1 && (
+            <>
+              <button 
+                onClick={goToPrevBanner}
+                className="absolute left-4 top-1/2 transform -translate-y-1/2 z-20 bg-white/70 backdrop-blur-sm p-2 rounded-full hover:bg-white transition-colors"
               >
-                {/* Background Image */}
-                {activeBanners[currentBanner].image && (
-                  <img
-                    src={activeBanners[currentBanner].image}
-                    alt={activeBanners[currentBanner].title}
-                    className="absolute inset-0 w-full h-full object-cover opacity-30"
-                  />
-                )}
-                
-                {/* Gradient Overlay */}
-                <div className="absolute inset-0 bg-black/20" />
-                
-                {/* Content */}
-                <div className="absolute inset-0 p-6 flex flex-col justify-between">
-                  <div>
-                    {activeBanners[currentBanner].showIcon && activeBanners[currentBanner].icon && (
-                      <div className="flex items-center space-x-2 mb-2">
-                        <span className="text-2xl">{activeBanners[currentBanner].icon}</span>
-                        <span className={`${activeBanners[currentBanner].textColor} font-bold text-sm`}>
-                          {activeBanners[currentBanner].subtitle}
-                        </span>
-                      </div>
-                    )}
-                    <h2 className={`text-2xl font-black ${activeBanners[currentBanner].textColor} mb-2`}>
-                      {activeBanners[currentBanner].title}
-                    </h2>
-                    {activeBanners[currentBanner].description && (
-                      <p className={`${activeBanners[currentBanner].textColor}/90 text-sm`}>
-                        {activeBanners[currentBanner].description}
-                      </p>
-                    )}
-                  </div>
-                  <motion.button
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    className={`self-start ${activeBanners[currentBanner].buttonColor} font-bold px-6 py-3 rounded-xl shadow-lg`}
-                  >
-                    {activeBanners[currentBanner].buttonText}
-                  </motion.button>
+                <ChevronLeft className="h-6 w-6 text-gray-800" />
+              </button>
+              <button 
+                onClick={goToNextBanner}
+                className="absolute right-4 top-1/2 transform -translate-y-1/2 z-20 bg-white/70 backdrop-blur-sm p-2 rounded-full hover:bg-white transition-colors"
+              >
+                <ChevronRight className="h-6 w-6 text-gray-800" />
+              </button>
+            </>
+          )}
+          
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={currentBanner}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              transition={{ duration: 0.8 }}
+              className="relative h-[400px] bg-pink-50 rounded-3xl overflow-hidden cursor-pointer"
+              onClick={() => activeBanners.length > 0 && handleBannerClick(activeBanners[currentBanner])}
+            >
+              {/* Background Image */}
+              {activeBanners.length > 0 && activeBanners[currentBanner]?.image && (
+                <img
+                  src={activeBanners[currentBanner].image}
+                  alt={activeBanners[currentBanner].title}
+                  className="absolute inset-0 w-full h-full object-cover"
+                />
+              )}
+              
+              {/* Gradient Overlay */}
+              <div className="absolute inset-0 bg-gradient-to-r from-pink-100/80 to-white/40" />
+              
+              {/* Content */}
+              <div className="absolute inset-0 p-10 flex flex-col justify-center max-w-lg">
+                <div className="mb-4">
+                  <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-pink-200 text-pink-800">
+                    🔥 HOT DEAL
+                  </span>
                 </div>
-                
-                {/* Decorative Elements */}
-                <div className="absolute top-4 right-4">
-                  <div className="w-16 h-16 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center">
-                    <Sparkles className="h-8 w-8 text-white" />
-                  </div>
+                <h2 className="text-4xl font-bold text-gray-900 mb-4">
+                  Up to 70% OFF
+                </h2>
+                <p className="text-gray-700 text-lg mb-6">
+                  Discover our exquisite collection of handwoven Ikkat textiles, crafted with traditional techniques and modern designs.
+                </p>
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  className="self-start bg-pink-500 text-white font-bold px-6 py-3 rounded-xl shadow-lg hover:bg-pink-600 transition-all flex items-center space-x-2"
+                >
+                  <span>Shop Now</span>
+                  <ArrowRight className="h-5 w-5" />
+                </motion.button>
+              </div>
+              
+              {/* Banner Indicators */}
+              {activeBanners.length > 1 && (
+                <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2 flex space-x-2">
+                  {activeBanners.map((_, index) => (
+                    <button
+                      key={index}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setIsManualTransition(true);
+                        setCurrentBanner(index);
+                      }}
+                      className={`w-2 h-2 rounded-full transition-all ${
+                        index === currentBanner 
+                          ? 'bg-pink-500 w-6' 
+                          : 'bg-pink-300'
+                      }`}
+                    />
+                  ))}
                 </div>
-
-                {/* Banner Indicators */}
-                {activeBanners.length > 1 && (
-                  <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex space-x-2">
-                    {activeBanners.map((_, index) => (
-                      <button
-                        key={index}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setIsManualTransition(true);
-                          setCurrentBanner(index);
-                        }}
-                        className={`w-2 h-2 rounded-full transition-all ${
-                          index === currentBanner 
-                            ? 'bg-white w-6' 
-                            : 'bg-white/50'
-                        }`}
-                      />
-                    ))}
-                  </div>
-                )}
-              </motion.div>
-            </AnimatePresence>
-          </div>
+              )}
+            </motion.div>
+          </AnimatePresence>
         </div>
-      )}
+      </div>
 
       {/* Categories */}
-      <div className="px-4 mb-6">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-xl font-bold text-gray-900">{landingSettings?.popularCategoriesTitle || 'Categories'}</h3>
-          <button className="text-purple-600 font-semibold text-sm">View All</button>
+      <div className="px-4 mb-10">
+        <div className="flex items-center justify-between mb-6">
+          <h3 className="text-2xl font-bold text-gray-900">{landingSettings?.popularCategoriesTitle || 'Shop by Category'}</h3>
+          <button className="text-pink-500 font-semibold text-sm">View All</button>
         </div>
-        <div className="flex space-x-3 overflow-x-auto scrollbar-hide">
-          {categories.map((category) => (
+        <div className="grid grid-cols-3 md:grid-cols-6 gap-4">
+          {categories.slice(1).map((category) => (
             <motion.button
               key={category.id}
+              whileHover={{ y: -5 }}
               whileTap={{ scale: 0.95 }}
               onClick={() => {
                 setActiveCategory(category.id);
-                if (category.id !== 'All') {
-                  onCategoryClick(category.name);
-                }
+                onCategoryClick(category.name);
               }}
-              className={`flex-shrink-0 flex flex-col items-center p-4 rounded-2xl min-w-[80px] transition-all ${
-                activeCategory === category.id
-                  ? 'bg-purple-600 text-white shadow-lg'
-                  : 'bg-white text-gray-700 shadow-sm'
-              }`}
+              className="flex flex-col items-center"
             >
-              <span className="text-2xl mb-2">{category.icon}</span>
-              <span className="font-semibold text-xs">{category.name}</span>
-              <span className={`text-xs mt-1 ${
-                activeCategory === category.id ? 'text-purple-200' : 'text-gray-500'
-              }`}>
-                {category.count}
-              </span>
+              <div className={`w-16 h-16 mb-3 rounded-full flex items-center justify-center bg-pink-100 text-2xl`}>
+                {category.icon}
+              </div>
+              <span className="font-medium text-gray-800 text-sm">{category.name}</span>
+              <span className="text-xs text-gray-500 mt-1">{category.count} items</span>
             </motion.button>
           ))}
         </div>
       </div>
 
-      {/* Trending Section */}
-      <div className="px-4 mb-6">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center space-x-2">
-            <TrendingUp className="h-5 w-5 text-orange-500" /> 
-            <h3 className="text-xl font-bold text-gray-900">{landingSettings?.trendingTitle || 'Trending Now'}</h3>
-          </div>
-          <button className="text-purple-600 font-semibold text-sm">See All</button>
-        </div>
-        <div className="flex space-x-4 overflow-x-auto scrollbar-hide">
-          {trendingProducts.map((product, index) => (
-            <motion.div
-              key={product.id}
-              initial={{ opacity: 0, x: 50 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: index * 0.1 }}
-              className="flex-shrink-0 w-40 bg-white rounded-2xl shadow-lg overflow-hidden"
-            >
-              <div className="relative">
-                <img
-                  src={product.images[0]}
-                  alt={product.name}
-                  className="w-full h-32 object-cover"
-                />
-                <div className="absolute top-2 left-2">
-                  <span className="bg-orange-500 text-white text-xs font-bold px-2 py-1 rounded-full">
-                    #{index + 1}
-                  </span>
-                </div>
-              </div>
-              <div className="p-3">
-                <h4 className="font-semibold text-gray-900 text-sm line-clamp-2 mb-2">
-                  {product.name}
-                </h4>
-                <div className="flex items-center space-x-1 mb-2">
-                  <Star className="h-3 w-3 text-yellow-400 fill-current" />
-                  <span className="text-xs text-gray-600">{product.rating}</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="font-bold text-purple-600">
-                    ₹{product.price.toLocaleString()}
-                  </span>
-                  <motion.button
-                    whileTap={{ scale: 0.9 }}
-                    onClick={() => addToCart(product, product.sizes[0], product.colors[0])}
-                    className="p-2 bg-purple-600 text-white rounded-lg"
-                  >
-                    <Plus className="h-3 w-3" />
-                  </motion.button>
-                </div>
-              </div>
-            </motion.div>
-          ))}
-        </div>
-      </div>
-
       {/* Featured Products */}
-      <div className="px-4 mb-6">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center space-x-2">
-            <Crown className="h-5 w-5 text-yellow-500" />
-            <h3 className="text-xl font-bold text-gray-900">{landingSettings?.bestSellingTitle || 'Featured'}</h3>
-          </div>
-          <button className="text-purple-600 font-semibold text-sm">View All</button>
+      <div className="px-4 mb-12">
+        <div className="flex items-center justify-between mb-6">
+          <h3 className="text-2xl font-bold text-gray-900">{landingSettings?.bestSellingTitle || 'Featured Collection'}</h3>
+          <button className="text-pink-500 font-semibold text-sm">View All</button>
         </div>
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
           {featuredProducts.map((product, index) => (
             <motion.div
               key={product.id}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.1 }}
-              className="bg-white rounded-2xl shadow-lg overflow-hidden"
+              className="bg-white rounded-2xl shadow-sm border border-pink-100 overflow-hidden group"
             >
               <div className="relative">
                 <img
                   src={product.images[0]}
                   alt={product.name}
-                  className="w-full h-40 object-cover"
+                  className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
                 />
                 <div className="absolute top-3 left-3">
-                  <span className="bg-gradient-to-r from-yellow-400 to-orange-500 text-white text-xs font-bold px-2 py-1 rounded-full">
-                    Featured
-                  </span>
-                </div>
-                {product.originalPrice && (
-                  <div className="absolute bottom-3 left-3">
-                    <span className="bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full">
+                  {product.originalPrice && (
+                    <span className="bg-pink-500 text-white text-xs font-bold px-2 py-1 rounded-full">
                       {Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)}% OFF
                     </span>
-                  </div>
-                )}
+                  )}
+                </div>
+                <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <button className="p-2 bg-white rounded-full shadow-md">
+                    <Heart className="h-4 w-4 text-pink-500" />
+                  </button>
+                </div>
               </div>
               <div className="p-4">
-                <h4 className="font-semibold text-gray-900 text-sm line-clamp-2 mb-2">
+                <h4 className="font-medium text-gray-900 text-sm line-clamp-2 mb-2">
                   {product.name}
                 </h4>
                 <div className="flex items-center space-x-1 mb-3">
@@ -350,7 +269,7 @@ const HomePage: React.FC<HomePageProps> = ({ onCategoryClick }) => {
                   <span className="text-sm text-gray-600">{product.rating}</span>
                   <span className="text-xs text-gray-400">({product.reviewCount})</span>
                 </div>
-                <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center justify-between">
                   <div>
                     <span className="font-bold text-gray-900">
                       ₹{product.price.toLocaleString()}
@@ -361,48 +280,110 @@ const HomePage: React.FC<HomePageProps> = ({ onCategoryClick }) => {
                       </span>
                     )}
                   </div>
+                  <motion.button
+                    whileTap={{ scale: 0.9 }}
+                    onClick={() => addToCart(product, product.sizes[0], product.colors[0])}
+                    className="p-2 bg-pink-100 text-pink-500 rounded-lg hover:bg-pink-200 transition-colors"
+                  >
+                    <Plus className="h-4 w-4" />
+                  </motion.button>
                 </div>
-                <motion.button
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  onClick={() => addToCart(product, product.sizes[0], product.colors[0])}
-                  className="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white font-semibold py-3 rounded-xl flex items-center justify-center space-x-2"
-                >
-                  <ShoppingBag className="h-4 w-4" />
-                  <span>Add to Cart</span>
-                </motion.button>
               </div>
             </motion.div>
           ))}
         </div>
       </div>
 
-      {/* Special Offers */}
-      <div className="px-4 mb-6">
-        <div className="bg-gradient-to-r from-emerald-500 to-teal-600 rounded-3xl p-6 text-white relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -translate-y-16 translate-x-16" />
-          <div className="absolute bottom-0 left-0 w-24 h-24 bg-white/10 rounded-full translate-y-12 -translate-x-12" />
-          <div className="relative z-10">
-            <div className="flex items-center space-x-2 mb-2">
-              <Sparkles className="h-5 w-5 text-emerald-200" />
-              <span className="text-emerald-200 font-semibold text-sm">SPECIAL OFFER</span>
-            </div>
-            <h3 className="text-2xl font-black mb-2">Free Shipping</h3>
-            <p className="text-emerald-100 mb-4">On orders above ₹1999</p>
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              className="bg-white text-emerald-600 font-bold px-6 py-3 rounded-xl"
+      {/* Trending Products */}
+      <div className="px-4 mb-12 bg-pink-50 py-10 rounded-3xl">
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center space-x-2">
+            <Sparkles className="h-6 w-6 text-pink-500" />
+            <h3 className="text-2xl font-bold text-gray-900">{landingSettings?.trendingTitle || 'Trending Now'}</h3>
+          </div>
+          <button className="text-pink-500 font-semibold text-sm">See All</button>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+          {trendingProducts.map((product, index) => (
+            <motion.div
+              key={product.id}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: index * 0.1 }}
+              className="bg-white rounded-2xl shadow-sm overflow-hidden group"
             >
-              Shop Now
-            </motion.button>
+              <div className="relative">
+                <img
+                  src={product.images[0]}
+                  alt={product.name}
+                  className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
+                />
+                <div className="absolute top-3 left-3">
+                  <span className="bg-pink-100 text-pink-800 text-xs font-bold px-2 py-1 rounded-full">
+                    #{index + 1} Trending
+                  </span>
+                </div>
+              </div>
+              <div className="p-4">
+                <h4 className="font-medium text-gray-900 mb-2 line-clamp-1">{product.name}</h4>
+                <div className="flex items-center justify-between">
+                  <span className="font-bold text-gray-900">
+                    ₹{product.price.toLocaleString()}
+                  </span>
+                  <div className="flex items-center space-x-2">
+                    <button className="p-1.5 bg-pink-100 text-pink-500 rounded-lg hover:bg-pink-200 transition-colors">
+                      <Eye className="h-4 w-4" />
+                    </button>
+                    <button className="p-1.5 bg-pink-500 text-white rounded-lg hover:bg-pink-600 transition-colors">
+                      <ShoppingBag className="h-4 w-4" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          ))}
+        </div>
+      </div>
+
+      {/* Special Offer Banner */}
+      <div className="px-4 mb-12">
+        <div className="bg-gradient-to-r from-pink-100 to-pink-50 rounded-3xl p-8 relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-64 h-64 bg-pink-200/30 rounded-full -translate-y-1/3 translate-x-1/3" />
+          <div className="absolute bottom-0 left-0 w-32 h-32 bg-pink-200/30 rounded-full translate-y-1/2 -translate-x-1/4" />
+          
+          <div className="relative z-10 flex flex-col md:flex-row items-center justify-between">
+            <div className="mb-6 md:mb-0">
+              <div className="flex items-center space-x-2 mb-2">
+                <Sparkles className="h-5 w-5 text-pink-500" />
+                <span className="text-pink-800 font-semibold text-sm">LIMITED TIME OFFER</span>
+              </div>
+              <h3 className="text-3xl font-bold text-gray-900 mb-2">Free Shipping</h3>
+              <p className="text-gray-700 mb-4">On orders above ₹1999</p>
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                className="bg-pink-500 text-white font-bold px-6 py-3 rounded-xl hover:bg-pink-600 transition-colors"
+              >
+                Shop Now
+              </motion.button>
+            </div>
+            
+            <div className="w-40 h-40 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center">
+              <div className="w-32 h-32 bg-white rounded-full flex items-center justify-center">
+                <div className="text-center">
+                  <p className="text-pink-800 font-bold">SAVE</p>
+                  <p className="text-3xl font-black text-pink-500">₹500</p>
+                  <p className="text-pink-800 text-xs">Use code: PINK500</p>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
 
       {/* Social Proof */}
-      <div className="px-4 mb-8">
-        <div className="bg-white rounded-2xl p-6 shadow-lg">
+      <div className="px-4 mb-12">
+        <div className="bg-white rounded-2xl p-8 shadow-sm border border-pink-100">
           <div className="text-center">
             <div className="flex items-center justify-center space-x-1 mb-2">
               {[...Array(5)].map((_, i) => (
@@ -410,22 +391,41 @@ const HomePage: React.FC<HomePageProps> = ({ onCategoryClick }) => {
               ))}
             </div>
             <h4 className="font-bold text-gray-900 mb-1">10,000+ Happy Customers</h4>
-            <p className="text-gray-600 text-sm mb-4">Join our community of satisfied shoppers</p>
-            <div className="flex items-center justify-center space-x-4">
+            <p className="text-gray-600 text-sm mb-6">Join our community of satisfied shoppers</p>
+            <div className="flex items-center justify-center space-x-8">
               <div className="text-center">
-                <div className="text-2xl font-black text-purple-600">4.9</div>
+                <div className="text-2xl font-black text-pink-500">4.9</div>
                 <div className="text-xs text-gray-500">Rating</div>
               </div>
               <div className="text-center">
-                <div className="text-2xl font-black text-green-600">99%</div>
+                <div className="text-2xl font-black text-pink-500">99%</div>
                 <div className="text-xs text-gray-500">Satisfaction</div>
               </div>
               <div className="text-center">
-                <div className="text-2xl font-black text-blue-600">24/7</div>
+                <div className="text-2xl font-black text-pink-500">24/7</div>
                 <div className="text-xs text-gray-500">Support</div>
               </div>
             </div>
           </div>
+        </div>
+      </div>
+
+      {/* Instagram Section */}
+      <div className="px-4 mb-12">
+        <div className="text-center mb-6">
+          <h3 className="text-2xl font-bold text-gray-900 mb-2">Follow Us on Instagram</h3>
+          <p className="text-gray-600">@looom.shop</p>
+        </div>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+          {[1, 2, 3, 4].map((item) => (
+            <div key={item} className="aspect-square bg-pink-100 rounded-lg overflow-hidden">
+              <img 
+                src={`https://images.pexels.com/photos/8193085/pexels-photo-8193085.jpeg?auto=compress&cs=tinysrgb&w=600&h=600&fit=crop&crop=entropy`} 
+                alt="Instagram post" 
+                className="w-full h-full object-cover hover:scale-110 transition-transform duration-300"
+              />
+            </div>
+          ))}
         </div>
       </div>
     </div>
