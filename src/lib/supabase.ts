@@ -8,22 +8,18 @@ if (!supabaseUrl || !supabaseAnonKey) {
   console.warn('Supabase environment variables not found. Using mock data.');
 }
 
-export const supabase = createClient<Database>(
-  supabaseUrl || 'https://placeholder.supabase.co',
-  supabaseAnonKey || 'placeholder-key'
-);
+export const supabase = (supabaseUrl && supabaseAnonKey) 
+  ? createClient<Database>(supabaseUrl, supabaseAnonKey)
+  : null;
 
 // Check if Supabase is properly configured
 export const isSupabaseConfigured = () => {
-  return !!(supabaseUrl && supabaseAnonKey && 
-    supabaseUrl !== 'https://placeholder.supabase.co' && 
-    supabaseAnonKey !== 'placeholder-key' &&
-    supabaseUrl.includes('supabase.co'));
+  return !!(supabase && supabaseUrl && supabaseAnonKey && supabaseUrl.includes('supabase.co'));
 };
 
 // Test connection and run migration if needed
 export const testSupabaseConnection = async () => {
-  if (!isSupabaseConfigured()) {
+  if (!supabase || !isSupabaseConfigured()) {
     return { success: false, error: 'Supabase not configured' };
   }
 
@@ -81,7 +77,7 @@ export const initializeSupabase = async () => {
 
 // Admin authentication helper
 export const signInAsAdmin = async (email: string, password: string) => {
-  if (!isSupabaseConfigured()) {
+  if (!supabase || !isSupabaseConfigured()) {
     console.log('⚠️  Demo mode: Admin authentication simulated');
     // Demo credentials check
     if (email === 'admin@looom.shop' && password === 'admin123') {
@@ -111,7 +107,7 @@ export const signInAsAdmin = async (email: string, password: string) => {
 
 // Check if current user is authenticated
 export const getCurrentUser = async () => {
-  if (!isSupabaseConfigured()) {
+  if (!supabase || !isSupabaseConfigured()) {
     // In demo mode, check localStorage for admin session
     const adminSession = localStorage.getItem('adminSession');
     const sessionExpiry = localStorage.getItem('adminSessionExpiry');
@@ -139,7 +135,7 @@ export const getCurrentUser = async () => {
 
 // Sign out user
 export const signOut = async () => {
-  if (!isSupabaseConfigured()) {
+  if (!supabase || !isSupabaseConfigured()) {
     // Clear demo session
     localStorage.removeItem('adminSession');
     localStorage.removeItem('adminSessionExpiry');
