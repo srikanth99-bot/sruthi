@@ -1,7 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 import type { Database } from './database.types';
 
-// Get environment variables with validation
+// Get environment variables with validation and defaults
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
 
@@ -9,10 +9,44 @@ if (!supabaseUrl || !supabaseAnonKey) {
   console.warn('Supabase environment variables not found. Using mock data.');
 }
 
-// Only create the client if we have valid URL and key
+// Create a dummy client for demo mode
+const createDummyClient = () => {
+  return {
+    from: () => ({
+      select: () => ({
+        single: () => Promise.resolve({ data: null, error: null }),
+        limit: () => Promise.resolve({ data: [], error: null }),
+        eq: () => ({
+          single: () => Promise.resolve({ data: null, error: null })
+        }),
+        order: () => Promise.resolve({ data: [], error: null })
+      }),
+      insert: () => Promise.resolve({ data: null, error: null }),
+      update: () => Promise.resolve({ data: null, error: null }),
+      delete: () => Promise.resolve({ data: null, error: null }),
+      upsert: () => ({
+        select: () => ({
+          single: () => Promise.resolve({ data: null, error: null })
+        })
+      })
+    }),
+    auth: {
+      getSession: () => Promise.resolve({ data: { session: null }, error: null }),
+      getUser: () => Promise.resolve({ data: { user: null }, error: null }),
+      onAuthStateChange: () => ({ data: { subscription: { unsubscribe: () => {} } } }),
+      signInWithPassword: () => Promise.resolve({ data: { user: null, session: null }, error: null }),
+      signOut: () => Promise.resolve({ error: null })
+    },
+    channel: () => ({
+      on: () => ({ subscribe: () => ({ unsubscribe: () => {} }) })
+    })
+  } as any;
+};
+
+// Create the client if we have valid URL and key, otherwise use dummy client
 export const supabase = (supabaseUrl && supabaseAnonKey && supabaseUrl.startsWith('http')) 
   ? createClient<Database>(supabaseUrl, supabaseAnonKey) 
-  : null;
+  : createDummyClient();
 
 // Check if Supabase is properly configured
 export const isSupabaseConfigured = () => {
@@ -22,26 +56,31 @@ export const isSupabaseConfigured = () => {
 
 // Test connection and run migration if needed
 export const testSupabaseConnection = async () => {
-  if (!supabase || !isSupabaseConfigured()) {
+  if (!isSupabaseConfigured()) {
     return { success: false, error: 'Supabase not configured' };
   }
 
   try {
     console.log('🔗 Testing Supabase connection...');
     
-    // Test basic connection with a simple query
-    const { data, error } = await supabase
-      .from('products')
-      .select('count')
-      .limit(1);
-    
-    if (error) {
-      console.error('❌ Supabase connection error:', error);
-      return { success: false, error: error.message };
+    try {
+      // Test basic connection with a simple query
+      const { data, error } = await supabase
+        .from('products')
+        .select('count')
+        .limit(1);
+      
+      if (error) {
+        console.error('❌ Supabase connection error:', error);
+        return { success: false, error: error.message };
+      }
+      
+      console.log('✅ Supabase connection successful');
+      return { success: true, data };
+    } catch (fetchError) {
+      console.error('❌ Supabase fetch error:', fetchError);
+      return { success: false, error: 'Network error when connecting to Supabase' };
     }
-    
-    console.log('✅ Supabase connection successful');
-    return { success: true, data };
   } catch (error) {
     console.error('❌ Supabase connection failed:', error);
     return { success: false, error: 'Connection failed' };
@@ -50,6 +89,7 @@ export const testSupabaseConnection = async () => {
 
 // Initialize Supabase connection
 export const initializeSupabase = async () => {
+  // Always log the configuration status
   if (!isSupabaseConfigured()) {
     console.log('⚠️  Supabase not configured, using demo mode');
     console.log('📝 To enable database functionality:');
@@ -60,14 +100,21 @@ export const initializeSupabase = async () => {
 
   try {
     console.log('🚀 Initializing Supabase connection...');
-    const result = await testSupabaseConnection();
     
-    if (result.success) {
-      console.log('✅ Supabase connected successfully');
-      console.log('💾 Products will now persist in the database');
-      return true;
-    } else {
-      console.error('❌ Supabase connection failed:', result.error);
+    try {
+      const result = await testSupabaseConnection();
+      
+      if (result.success) {
+        console.log('✅ Supabase connected successfully');
+        console.log('💾 Products will now persist in the database');
+        return true;
+      } else {
+        console.error('❌ Supabase connection failed:', result.error);
+        console.log('🔄 Falling back to demo mode');
+        return false;
+      }
+    } catch (connectionError) {
+      console.error('❌ Supabase connection error:', connectionError);
       console.log('🔄 Falling back to demo mode');
       return false;
     }
@@ -80,7 +127,7 @@ export const initializeSupabase = async () => {
 
 // Admin authentication helper
 export const signInAsAdmin = async (email: string, password: string) => {
-  if (!supabase || !isSupabaseConfigured()) {
+  if (!isSupabaseConfigured()) {
     console.log('⚠️  Demo mode: Admin authentication simulated');
     // Demo credentials check
     if (email === 'admin@looom.shop' && password === 'admin123') {
@@ -110,7 +157,7 @@ export const signInAsAdmin = async (email: string, password: string) => {
 
 // Check if current user is authenticated
 export const getCurrentUser = async () => {
-  if (!supabase || !isSupabaseConfigured()) {
+  if (!isSupabaseConfigured()) {
     // In demo mode, check localStorage for admin session
     const adminSession = localStorage.getItem('adminSession');
     const sessionExpiry = localStorage.getItem('adminSessionExpiry');
@@ -138,7 +185,7 @@ export const getCurrentUser = async () => {
 
 // Sign out user
 export const signOut = async () => {
-  if (!supabase || !isSupabaseConfigured()) {
+  if (!isSupabaseConfigured()) {
     // Clear demo session
     localStorage.removeItem('adminSession');
     localStorage.removeItem('adminSessionExpiry');
