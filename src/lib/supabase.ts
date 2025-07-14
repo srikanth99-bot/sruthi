@@ -1,20 +1,23 @@
 import { createClient } from '@supabase/supabase-js';
 import type { Database } from './database.types';
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+// Get environment variables with validation
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
 
 if (!supabaseUrl || !supabaseAnonKey) {
   console.warn('Supabase environment variables not found. Using mock data.');
 }
 
-export const supabase = (supabaseUrl && supabaseAnonKey) 
-  ? createClient<Database>(supabaseUrl, supabaseAnonKey)
+// Only create the client if we have valid URL and key
+export const supabase = (supabaseUrl && supabaseAnonKey && supabaseUrl.startsWith('http')) 
+  ? createClient<Database>(supabaseUrl, supabaseAnonKey) 
   : null;
 
 // Check if Supabase is properly configured
 export const isSupabaseConfigured = () => {
-  return !!(supabase && supabaseUrl && supabaseAnonKey && supabaseUrl.includes('supabase.co'));
+  return !!(supabase && supabaseUrl && supabaseAnonKey && 
+    (supabaseUrl.includes('supabase.co') || supabaseUrl.includes('supabase.in')));
 };
 
 // Test connection and run migration if needed
