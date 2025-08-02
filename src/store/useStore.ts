@@ -259,12 +259,29 @@ export const useStore = create<StoreState>()(
 
       adminLogin: async (email: string, password: string) => {
         try {
+          console.log('🔐 Admin login attempt:', { email, isSupabaseConfigured: isSupabaseConfigured() });
+          
+          if (isSupabaseConfigured()) {
+            // Try Supabase authentication
+            const result = await signInAsAdmin(email, password);
+            if (result.success) {
+              console.log('✅ Supabase admin login successful');
+              return true;
+            } else {
+              console.log('❌ Supabase admin login failed:', result.error);
+              return false;
+            }
+          }
+          
           // Simple admin check
           if (email === 'admin@looom.shop' && password === 'admin123') {
+            console.log('✅ Demo admin login successful');
             localStorage.setItem('adminSession', 'true');
             localStorage.setItem('adminSessionExpiry', (Date.now() + 8 * 60 * 60 * 1000).toString());
             return true;
           }
+          
+          console.log('❌ Demo admin login failed - invalid credentials');
           return false;
         } catch (error) {
           console.error('Admin login failed:', error);

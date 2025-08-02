@@ -50,8 +50,17 @@ export const supabase = (supabaseUrl && supabaseAnonKey && supabaseUrl.startsWit
 
 // Check if Supabase is properly configured
 export const isSupabaseConfigured = () => {
-  return !!(supabase && supabaseUrl && supabaseAnonKey && 
-    (supabaseUrl.includes('supabase.co') || supabaseUrl.includes('supabase.in')));
+  const hasValidUrl = supabaseUrl && supabaseUrl.startsWith('https://') && 
+    (supabaseUrl.includes('supabase.co') || supabaseUrl.includes('supabase.in'));
+  const hasValidKey = supabaseAnonKey && supabaseAnonKey.startsWith('eyJ');
+  
+  console.log('🔍 Supabase Configuration Check:');
+  console.log('  URL:', supabaseUrl ? '✅ Present' : '❌ Missing');
+  console.log('  Key:', supabaseAnonKey ? '✅ Present' : '❌ Missing');
+  console.log('  Valid URL:', hasValidUrl ? '✅ Valid' : '❌ Invalid');
+  console.log('  Valid Key:', hasValidKey ? '✅ Valid' : '❌ Invalid');
+  
+  return !!(hasValidUrl && hasValidKey);
 };
 
 // Test connection and run migration if needed

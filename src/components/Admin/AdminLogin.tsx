@@ -194,17 +194,20 @@ const AdminLogin: React.FC<AdminLoginProps> = ({ onLogin }) => {
           {/* Demo Credentials Info */}
           <div className="mt-8 pt-6 border-t border-white/20">
             <div className="text-center text-gray-400 text-sm">
-              <p className="mb-2">🔒 {isSupabaseConfigured() ? 'Live Database Mode' : 'Demo Credentials'}:</p>
+              <p className="mb-2">🔒 {isSupabaseConfigured() ? 'Live Database Mode' : 'Demo Mode Active'}:</p>
               {!isSupabaseConfigured() && (
                 <div className="bg-white/5 rounded-lg p-3 mb-3">
                   <p className="font-mono text-xs text-green-300">Email: admin@looom.shop</p>
                   <p className="font-mono text-xs text-green-300">Password: admin123</p>
+                  <div className="mt-2 text-xs text-yellow-300">
+                    <p>⚠️ Demo mode detected. Check console for details.</p>
+                  </div>
                 </div>
               )}
               <p className="text-xs">
                 {isSupabaseConfigured() 
                   ? 'Use your Supabase account credentials' 
-                  : 'Use these credentials to access the admin panel'
+                  : 'Supabase not configured - using demo mode'
                 }
               </p>
             </div>
