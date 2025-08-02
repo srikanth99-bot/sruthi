@@ -152,94 +152,94 @@ ON CONFLICT (id) DO NOTHING;
 INSERT INTO products (id, name, price, original_price, category, description, images, sizes, colors, stock, featured, rating, review_count, tags, supports_feeding_friendly, is_stitched_dress) VALUES
 
 -- Traditional Ikkat Patterned Dress (Featured)
-('17', 'Traditional Ikkat Patterned Dress', 100000, 120000, 'Frocks', 'Beautiful traditional Ikkat patterned dress featuring vibrant red, orange, and brown geometric patterns. Perfect for casual wear and special occasions with its comfortable fit and elegant design.', 
+( 'Traditional Ikkat Patterned Dress', 100000, 120000, 'Frocks', 'Beautiful traditional Ikkat patterned dress featuring vibrant red, orange, and brown geometric patterns. Perfect for casual wear and special occasions with its comfortable fit and elegant design.', 
  ARRAY['https://images.pexels.com/photos/5560021/pexels-photo-5560021.jpeg', 'https://images.pexels.com/photos/5560020/pexels-photo-5560020.jpeg'], 
  ARRAY['S', 'M', 'L', 'XL'], ARRAY['Red', 'Orange', 'Brown'], 15, true, 4.7, 15, 
  ARRAY['ikkat', 'traditional', 'patterned', 'casual', 'comfortable'], false, true),
 
 -- Sarees
-('1', 'Traditional Ikkat Silk Saree', 450000, 600000, 'Sarees', 'Handwoven Ikkat silk saree with traditional geometric patterns. Perfect for special occasions and festivals.',
+('Traditional Ikkat Silk Saree', 450000, 600000, 'Sarees', 'Handwoven Ikkat silk saree with traditional geometric patterns. Perfect for special occasions and festivals.',
  ARRAY['https://images.pexels.com/photos/8193085/pexels-photo-8193085.jpeg', 'https://images.pexels.com/photos/8106881/pexels-photo-8106881.jpeg'],
  ARRAY['Free Size'], ARRAY['Maroon', 'Navy Blue', 'Forest Green'], 10, true, 4.8, 124,
  ARRAY['silk', 'traditional', 'handwoven', 'festival'], false, false),
 
-('7', 'Royal Blue Ikkat Silk Saree', 520000, 700000, 'Sarees', 'Exquisite royal blue Ikkat silk saree with intricate patterns and gold border.',
+( 'Royal Blue Ikkat Silk Saree', 520000, 700000, 'Sarees', 'Exquisite royal blue Ikkat silk saree with intricate patterns and gold border.',
  ARRAY['https://images.pexels.com/photos/8193085/pexels-photo-8193085.jpeg'],
  ARRAY['Free Size'], ARRAY['Royal Blue', 'Deep Purple', 'Emerald Green'], 8, true, 4.9, 89,
  ARRAY['silk', 'royal', 'handwoven', 'wedding'], false, false),
 
-('8', 'Vintage Ikkat Cotton Saree', 280000, 350000, 'Sarees', 'Comfortable cotton Ikkat saree with vintage patterns, perfect for daily wear.',
+('Vintage Ikkat Cotton Saree', 280000, 350000, 'Sarees', 'Comfortable cotton Ikkat saree with vintage patterns, perfect for daily wear.',
  ARRAY['https://images.pexels.com/photos/8193085/pexels-photo-8193085.jpeg'],
  ARRAY['Free Size'], ARRAY['Beige', 'Rust Orange', 'Olive Green'], 12, false, 4.6, 67,
  ARRAY['cotton', 'vintage', 'daily wear', 'comfortable'], false, false),
 
 -- Frocks
-('2', 'Cotton Ikkat Frock', 120000, 150000, 'Frocks', 'Comfortable cotton Ikkat frock with beautiful patterns. Perfect for daily wear and casual outings.',
+('Cotton Ikkat Frock', 120000, 150000, 'Frocks', 'Comfortable cotton Ikkat frock with beautiful patterns. Perfect for daily wear and casual outings.',
  ARRAY['https://images.pexels.com/photos/5560021/pexels-photo-5560021.jpeg', 'https://images.pexels.com/photos/5560020/pexels-photo-5560020.jpeg'],
  ARRAY['S', 'M', 'L', 'XL'], ARRAY['Pink', 'Blue', 'Yellow'], 20, true, 4.6, 89,
  ARRAY['cotton', 'casual', 'comfortable', 'daily wear'], false, true),
-
-('9', 'Designer Ikkat Maxi Frock', 180000, 220000, 'Frocks', 'Elegant maxi frock with contemporary Ikkat designs, perfect for parties.',
+  
+('Designer Ikkat Maxi Frock', 180000, 220000, 'Frocks', 'Elegant maxi frock with contemporary Ikkat designs, perfect for parties.',
  ARRAY['https://images.pexels.com/photos/5560021/pexels-photo-5560021.jpeg'],
  ARRAY['S', 'M', 'L', 'XL'], ARRAY['Black', 'Wine Red', 'Navy Blue'], 15, false, 4.7, 45,
  ARRAY['designer', 'maxi', 'party wear', 'elegant'], false, true),
 
-('10', 'Kids Ikkat Frock', 80000, 100000, 'Frocks', 'Adorable Ikkat frock for kids with vibrant colors and comfortable fit.',
+('Kids Ikkat Frock', 80000, 100000, 'Frocks', 'Adorable Ikkat frock for kids with vibrant colors and comfortable fit.',
  ARRAY['https://images.pexels.com/photos/5560021/pexels-photo-5560021.jpeg'],
  ARRAY['2-3Y', '4-5Y', '6-7Y', '8-9Y'], ARRAY['Pink', 'Purple', 'Orange'], 25, false, 4.8, 123,
  ARRAY['kids', 'colorful', 'comfortable', 'cute'], false, true),
 
 -- Dress Materials
-('3', 'Ikkat Dress Material Set', 280000, NULL, 'Dress Materials', 'Premium Ikkat dress material set with matching dupatta. Ready to stitch into your preferred style.',
+( 'Ikkat Dress Material Set', 280000, NULL, 'Dress Materials', 'Premium Ikkat dress material set with matching dupatta. Ready to stitch into your preferred style.',
  ARRAY['https://images.pexels.com/photos/7679720/pexels-photo-7679720.jpeg', 'https://images.pexels.com/photos/7679719/pexels-photo-7679719.jpeg'],
  ARRAY['2.5m', '3m'], ARRAY['Purple', 'Teal', 'Orange'], 18, false, 4.7, 56,
  ARRAY['dress material', 'dupatta', 'premium', 'custom'], false, false),
 
-('11', 'Silk Ikkat Dress Material', 350000, 420000, 'Dress Materials', 'Luxurious silk Ikkat dress material with intricate weaving patterns.',
+( 'Silk Ikkat Dress Material', 350000, 420000, 'Dress Materials', 'Luxurious silk Ikkat dress material with intricate weaving patterns.',
  ARRAY['https://images.pexels.com/photos/7679720/pexels-photo-7679720.jpeg'],
  ARRAY['2.5m', '3m', '3.5m'], ARRAY['Gold', 'Silver', 'Bronze'], 10, true, 4.8, 34,
  ARRAY['silk', 'luxury', 'intricate', 'premium'], false, false),
 
 -- Kurtas
-('4', 'Designer Ikkat Kurta', 180000, 220000, 'Kurtas', 'Elegant Ikkat kurta with contemporary design. Perfect for office wear and semi-formal occasions.',
+('Designer Ikkat Kurta', 180000, 220000, 'Kurtas', 'Elegant Ikkat kurta with contemporary design. Perfect for office wear and semi-formal occasions.',
  ARRAY['https://images.pexels.com/photos/8100784/pexels-photo-8100784.jpeg'],
  ARRAY['S', 'M', 'L', 'XL', 'XXL'], ARRAY['White', 'Cream', 'Light Blue'], 22, false, 4.5, 78,
  ARRAY['kurta', 'designer', 'office wear', 'semi-formal'], false, true),
 
-('12', 'Traditional Ikkat Kurta', 150000, 180000, 'Kurtas', 'Classic traditional Ikkat kurta with authentic patterns and comfortable fit.',
+( 'Traditional Ikkat Kurta', 150000, 180000, 'Kurtas', 'Classic traditional Ikkat kurta with authentic patterns and comfortable fit.',
  ARRAY['https://images.pexels.com/photos/8100784/pexels-photo-8100784.jpeg'],
  ARRAY['S', 'M', 'L', 'XL', 'XXL'], ARRAY['Saffron', 'Maroon', 'Forest Green'], 18, false, 4.6, 92,
  ARRAY['traditional', 'authentic', 'comfortable', 'classic'], false, true),
 
 -- Blouses
-('5', 'Handwoven Ikkat Blouse', 80000, NULL, 'Blouses', 'Beautiful handwoven Ikkat blouse to pair with your sarees. Available in multiple sizes and colors.',
+( 'Handwoven Ikkat Blouse', 80000, NULL, 'Blouses', 'Beautiful handwoven Ikkat blouse to pair with your sarees. Available in multiple sizes and colors.',
  ARRAY['https://images.pexels.com/photos/8100786/pexels-photo-8100786.jpeg'],
  ARRAY['32', '34', '36', '38', '40', '42'], ARRAY['Gold', 'Silver', 'Red', 'Black'], 30, false, 4.4, 45,
  ARRAY['blouse', 'handwoven', 'saree blouse', 'traditional'], false, true),
 
-('13', 'Designer Ikkat Blouse', 120000, 150000, 'Blouses', 'Contemporary designer Ikkat blouse with modern cuts and traditional patterns.',
+( 'Designer Ikkat Blouse', 120000, 150000, 'Blouses', 'Contemporary designer Ikkat blouse with modern cuts and traditional patterns.',
  ARRAY['https://images.pexels.com/photos/8100786/pexels-photo-8100786.jpeg'],
  ARRAY['32', '34', '36', '38', '40', '42'], ARRAY['Rose Gold', 'Copper', 'Antique Gold'], 20, false, 4.7, 28,
  ARRAY['designer', 'modern', 'contemporary', 'stylish'], false, true),
 
 -- Lehengas
-('6', 'Festive Ikkat Lehenga Set', 850000, 1200000, 'Lehengas', 'Stunning Ikkat lehenga set for weddings and special celebrations. Includes blouse, lehenga, and dupatta.',
+('Festive Ikkat Lehenga Set', 850000, 1200000, 'Lehengas', 'Stunning Ikkat lehenga set for weddings and special celebrations. Includes blouse, lehenga, and dupatta.',
  ARRAY['https://images.pexels.com/photos/8100783/pexels-photo-8100783.jpeg'],
  ARRAY['S', 'M', 'L'], ARRAY['Royal Blue', 'Deep Red', 'Emerald Green'], 5, true, 4.9, 203,
  ARRAY['lehenga', 'festive', 'wedding', 'celebration'], false, true),
 
-('14', 'Bridal Ikkat Lehenga', 1500000, 2000000, 'Lehengas', 'Exquisite bridal Ikkat lehenga with heavy embellishments and intricate work.',
+( 'Bridal Ikkat Lehenga', 1500000, 2000000, 'Lehengas', 'Exquisite bridal Ikkat lehenga with heavy embellishments and intricate work.',
  ARRAY['https://images.pexels.com/photos/8100783/pexels-photo-8100783.jpeg'],
  ARRAY['S', 'M', 'L', 'XL'], ARRAY['Bridal Red', 'Golden Yellow', 'Royal Purple'], 3, true, 5.0, 67,
  ARRAY['bridal', 'heavy work', 'embellished', 'luxury'], false, true),
 
 -- Accessories
-('15', 'Ikkat Dupatta', 60000, 80000, 'Accessories', 'Beautiful Ikkat dupatta to complement your ethnic outfits.',
+( 'Ikkat Dupatta', 60000, 80000, 'Accessories', 'Beautiful Ikkat dupatta to complement your ethnic outfits.',
  ARRAY['https://images.pexels.com/photos/8100786/pexels-photo-8100786.jpeg'],
  ARRAY['2.5m'], ARRAY['Multi Color', 'Blue Shades', 'Pink Shades'], 40, false, 4.3, 89,
  ARRAY['dupatta', 'accessory', 'complement', 'ethnic'], false, false),
 
-('16', 'Ikkat Stole', 45000, NULL, 'Accessories', 'Lightweight Ikkat stole perfect for casual and formal occasions.',
+('Ikkat Stole', 45000, NULL, 'Accessories', 'Lightweight Ikkat stole perfect for casual and formal occasions.',
  ARRAY['https://images.pexels.com/photos/8100786/pexels-photo-8100786.jpeg'],
  ARRAY['2m'], ARRAY['Beige', 'Grey', 'Navy'], 35, false, 4.2, 45,
  ARRAY['stole', 'lightweight', 'versatile', 'casual'], false, false)
