@@ -141,10 +141,11 @@ const HomePage: React.FC<HomePageProps> = ({ onCategoryClick }) => {
               {/* Background Image */}
               {activeBanners.length > 0 && activeBanners[currentBanner]?.image && (
                 <img
-                  src={activeBanners[currentBanner].image}
-                  alt={activeBanners[currentBanner].title}
-                  className="absolute inset-0 w-full h-full object-cover"
-                />
+  src="https://res.cloudinary.com/dy0suzkjs/image/upload/v1753492995/cld-sample-4.jpg"
+  alt="Cloudinary Banner"
+  className="absolute inset-0 w-full h-full object-cover"
+/>
+
               )}
               
               {/* Gradient Overlay */}
