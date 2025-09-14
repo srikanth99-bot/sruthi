@@ -158,7 +158,7 @@ function App() {
     <div className="min-h-screen bg-gray-50">
       {/* Only show header on desktop */}
       <div className="hidden md:block">
-        <Header />
+        <Header onTabChange={handleTabChange} />
       </div>
       
       <MobileMenu />

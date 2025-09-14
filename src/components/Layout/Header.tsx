@@ -6,9 +6,10 @@ import type { LandingSettings } from '../../types';
 
 interface HeaderProps {
   isAdmin?: boolean;
+  onTabChange?: (tab: string) => void;
 }
 
-const Header: React.FC<HeaderProps> = ({ isAdmin = false }) => {
+const Header: React.FC<HeaderProps> = ({ isAdmin = false, onTabChange }) => {
   const { 
     cartItems, 
     setCartOpen, 
@@ -198,6 +199,7 @@ const Header: React.FC<HeaderProps> = ({ isAdmin = false }) => {
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
+                onClick={() => onTabChange?.('profile')}
                 className="relative p-3 rounded-xl hover:bg-gray-100 transition-colors"
               >
                 {isAuthenticated && user ? (
