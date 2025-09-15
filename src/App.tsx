@@ -27,26 +27,13 @@ function App() {
     initializeApp, 
     isAuthenticated, 
     isLoadingProducts, 
-    isInitialized,
-    landingSettings
+    isInitialized
   } = useStore();
 
   // Initialize app on mount
   useEffect(() => {
     initializeApp();
-    
-    // Update page title when landingSettings change
-    if (isInitialized && landingSettings?.pageTitle) {
-      document.getElementById('page-title')!.textContent = landingSettings.pageTitle;
-    }
   }, [initializeApp]);
-  
-  // Update page title when landingSettings change
-  useEffect(() => {
-    if (landingSettings?.pageTitle) {
-      document.getElementById('page-title')!.textContent = landingSettings.pageTitle;
-    }
-  }, [landingSettings?.pageTitle]);
 
   // Check if current path is admin
   const isAdminRoute = window.location.pathname === '/admin';

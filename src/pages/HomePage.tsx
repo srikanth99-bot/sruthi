@@ -8,15 +8,15 @@ interface HomePageProps {
 }
 
 const HomePage: React.FC<HomePageProps> = ({ onCategoryClick }) => {
-  const { addToCart, banners, landingSettings, products, updateBanner } = useStore();
+  const { addToCart, banners, products, updateBanner } = useStore();
   const [activeCategory, setActiveCategory] = useState('All');
   const [currentBanner, setCurrentBanner] = useState(0);
   const [isManualTransition, setIsManualTransition] = useState(false);
 
   const activeBanners = banners.filter(banner => banner.isActive).sort((a, b) => a.sortOrder - b.sortOrder);
 
-  // Use landing settings for categories if available
-  const categoryNames = landingSettings?.categoriesList || ['Sarees', 'Frocks', 'Kurtas', 'Lehengas', 'Dress Materials', 'Blouses'];
+  // Default categories
+  const categoryNames = ['Sarees', 'Frocks', 'Kurtas', 'Lehengas', 'Dress Materials', 'Blouses'];
   
   // Auto-slide banners
   const categories = [
@@ -34,21 +34,11 @@ const HomePage: React.FC<HomePageProps> = ({ onCategoryClick }) => {
     }))
   ];
 
-  // Use landing settings for featured products if available
+  // Get featured products
   let featuredProducts = products.filter(p => p.featured).slice(0, 6);
-  if (landingSettings?.bestSellingProductIds && landingSettings.bestSellingProductIds.length > 0) {
-    featuredProducts = products
-      .filter(p => landingSettings.bestSellingProductIds?.includes(p.id))
-      .slice(0, 6);
-  }
   
-  // Use landing settings for trending products if available
+  // Get trending products
   let trendingProducts = products.slice(0, 4);
-  if (landingSettings?.trendingProductIds && landingSettings.trendingProductIds.length > 0) {
-    trendingProducts = products
-      .filter(p => landingSettings.trendingProductIds?.includes(p.id))
-      .slice(0, 4);
-  }
 
   useEffect(() => {
     if (activeBanners.length > 1) {
@@ -202,7 +192,7 @@ const HomePage: React.FC<HomePageProps> = ({ onCategoryClick }) => {
       {/* Categories */}
       <div className="px-4 mb-10">
         <div className="flex items-center justify-between mb-6">
-          <h3 className="text-2xl font-bold text-gray-900">{landingSettings?.popularCategoriesTitle || 'Shop by Category'}</h3>
+          <h3 className="text-2xl font-bold text-gray-900">Shop by Category</h3>
           <button className="text-pink-500 font-semibold text-sm">View All</button>
         </div>
         <div className="grid grid-cols-3 md:grid-cols-6 gap-4">
@@ -230,7 +220,7 @@ const HomePage: React.FC<HomePageProps> = ({ onCategoryClick }) => {
       {/* Featured Products */}
       <div className="px-4 mb-12">
         <div className="flex items-center justify-between mb-6">
-          <h3 className="text-2xl font-bold text-gray-900">{landingSettings?.bestSellingTitle || 'Featured Collection'}</h3>
+          <h3 className="text-2xl font-bold text-gray-900">Featured Collection</h3>
           <button className="text-pink-500 font-semibold text-sm">View All</button>
         </div>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
@@ -300,7 +290,7 @@ const HomePage: React.FC<HomePageProps> = ({ onCategoryClick }) => {
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center space-x-2">
             <Sparkles className="h-6 w-6 text-pink-500" />
-            <h3 className="text-2xl font-bold text-gray-900">{landingSettings?.trendingTitle || 'Trending Now'}</h3>
+            <h3 className="text-2xl font-bold text-gray-900">Trending Now</h3>
           </div>
           <button className="text-pink-500 font-semibold text-sm">See All</button>
         </div>

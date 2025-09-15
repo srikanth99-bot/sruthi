@@ -2,7 +2,6 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { productService } from '../services/productService';
 import { isSupabaseConfigured, initializeSupabase, signInAsAdmin, signOut } from '../lib/supabase';
-import { landingSettingsService } from '../services/landingSettingsService';
 import type { 
   Product, 
   CartItem, 
@@ -18,8 +17,7 @@ import type {
   SignupData,
   Address,
   Notification,
-  RazorpayPayment,
-  LandingSettings
+  RazorpayPayment
 } from '../types';
 
 interface StoreState extends AuthState {
@@ -39,9 +37,6 @@ interface StoreState extends AuthState {
   // UI state
   mobileMenuOpen: boolean;
   filterDrawerOpen: boolean;
-  
-  // Landing page settings
-  landingSettings: LandingSettings | null;
   
   // Admin state
   orders: Order[];
@@ -145,10 +140,6 @@ interface StoreState extends AuthState {
   
   setOrders: (orders: Order[]) => void;
   
-  // Landing settings actions
-  loadLandingSettings: () => Promise<void>;
-  updateLandingSettings: (settings: Partial<LandingSettings>) => Promise<void>;
-  
   setSelectedOrder: (order: Order | null) => void;
   setUser: (user: User) => void;
 }
@@ -181,7 +172,6 @@ export const useStore = create<StoreState>()(
       searchQuery: '',
       mobileMenuOpen: false,
       filterDrawerOpen: false,
-      landingSettings: null,
       orders: [],
       selectedOrder: null,
       payments: [],
@@ -859,7 +849,6 @@ export const useStore = create<StoreState>()(
         categories: state.categories,
         themes: state.themes,
         stories: state.stories,
-        landingSettings: state.landingSettings,
         banners: state.banners,
         orders: state.orders,
         payments: state.payments,
