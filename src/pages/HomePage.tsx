@@ -2,18 +2,15 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowRight, Star, Heart, ShoppingBag, Eye, Plus, ChevronLeft, ChevronRight, Sparkles } from 'lucide-react';
 import { useStore } from '../store/useStore';
+import BannerCarousel from '../components/HomePageSections/BannerCarousel';
 
 interface HomePageProps {
   onCategoryClick: (category: string) => void;
 }
 
 const HomePage: React.FC<HomePageProps> = ({ onCategoryClick }) => {
-  const { addToCart, banners, products, updateBanner } = useStore();
+  const { addToCart, products } = useStore();
   const [activeCategory, setActiveCategory] = useState('All');
-  const [currentBanner, setCurrentBanner] = useState(0);
-  const [isManualTransition, setIsManualTransition] = useState(false);
-
-  const activeBanners = banners.filter(banner => banner.isActive).sort((a, b) => a.sortOrder - b.sortOrder);
 
   // Default categories
   const categoryNames = ['Sarees', 'Frocks', 'Kurtas', 'Lehengas', 'Dress Materials', 'Blouses'];
@@ -40,152 +37,12 @@ const HomePage: React.FC<HomePageProps> = ({ onCategoryClick }) => {
   // Get trending products
   let trendingProducts = products.slice(0, 4);
 
-  useEffect(() => {
-    if (activeBanners.length > 1) {
-      let timer: NodeJS.Timeout;
-      
-      if (!isManualTransition) {
-        timer = setInterval(() => {
-          setCurrentBanner((prev) => (prev + 1) % activeBanners.length);
-        }, 5000); // Change banner every 5 seconds
-      }
-      
-      return () => {
-        if (timer) clearInterval(timer);
-      };
-    }
-  }, [activeBanners.length, isManualTransition, currentBanner]);
-  
-  // Reset manual transition flag after a delay
-  useEffect(() => {
-    if (isManualTransition) {
-      const timer = setTimeout(() => {
-        setIsManualTransition(false);
-      }, 5000); // Resume auto-sliding after 5 seconds of inactivity
-      
-      return () => clearTimeout(timer);
-    }
-  }, [isManualTransition, currentBanner]);
-
-  const handleBannerClick = (banner: any) => {
-    if (banner.linkType === 'category' && banner.linkValue) {
-      onCategoryClick(banner.linkValue);
-    } else if (banner.linkType === 'collection' && banner.linkValue) {
-      onCategoryClick(banner.linkValue);
-    }
-  };
-
-  const goToPrevBanner = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    setIsManualTransition(true);
-    setCurrentBanner((prev) => (prev - 1 + activeBanners.length) % activeBanners.length);
-  };
-
-  const goToNextBanner = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    setIsManualTransition(true);
-    setCurrentBanner((prev) => (prev + 1) % activeBanners.length);
-  };
-
-  const getBannerHeight = (height: string) => {
-    switch (height) {
-      case 'small': return 'h-32';
-      case 'large': return 'h-64';
-      default: return 'h-48';
-    }
-  };
-
   return (
     <div className="min-h-screen bg-white">
       {/* Hero Banner Section */}
       <div className="px-4 py-6 mb-6">
-        <div className="relative">
-          {/* Navigation Arrows */}
-          {activeBanners.length > 1 && (
-            <>
-              <button 
-                onClick={goToPrevBanner}
-                className="absolute left-4 top-1/2 transform -translate-y-1/2 z-20 bg-white/70 backdrop-blur-sm p-2 rounded-full hover:bg-white transition-colors"
-              >
-                <ChevronLeft className="h-6 w-6 text-gray-800" />
-              </button>
-              <button 
-                onClick={goToNextBanner}
-                className="absolute right-4 top-1/2 transform -translate-y-1/2 z-20 bg-white/70 backdrop-blur-sm p-2 rounded-full hover:bg-white transition-colors"
-              >
-                <ChevronRight className="h-6 w-6 text-gray-800" />
-              </button>
-            </>
-          )}
-          
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={currentBanner}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              transition={{ duration: 0.8 }}
-              className="relative h-[400px] bg-pink-50 rounded-3xl overflow-hidden cursor-pointer"
-              onClick={() => activeBanners.length > 0 && handleBannerClick(activeBanners[currentBanner])}
-            >
-              {/* Background Image */}
-              {activeBanners.length > 0 && activeBanners[currentBanner]?.image && (
-                <img
-  src="https://res.cloudinary.com/dy0suzkjs/image/upload/v1753492995/cld-sample-4.jpg"
-  alt="Cloudinary Banner"
-  className="absolute inset-0 w-full h-full object-cover"
-/>
-
-              )}
-              
-              {/* Gradient Overlay */}
-              <div className="absolute inset-0 bg-gradient-to-r from-pink-100/80 to-white/40" />
-              
-              {/* Content */}
-              <div className="absolute inset-0 p-10 flex flex-col justify-center max-w-lg">
-                <div className="mb-4">
-                  <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-pink-200 text-pink-800">
-                    🔥 HOT DEAL
-                  </span>
-                </div>
-                <h2 className="text-4xl font-bold text-gray-900 mb-4">
-                  Up to 70% OFF
-                </h2>
-                <p className="text-gray-700 text-lg mb-6">
-                  Discover our exquisite collection of handwoven Ikkat textiles, crafted with traditional techniques and modern designs.
-                </p>
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  className="self-start bg-pink-500 text-white font-bold px-6 py-3 rounded-xl shadow-lg hover:bg-pink-600 transition-all flex items-center space-x-2"
-                >
-                  <span>Shop Now</span>
-                  <ArrowRight className="h-5 w-5" />
-                </motion.button>
-              </div>
-              
-              {/* Banner Indicators */}
-              {activeBanners.length > 1 && (
-                <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2 flex space-x-2">
-                  {activeBanners.map((_, index) => (
-                    <button
-                      key={index}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setIsManualTransition(true);
-                        setCurrentBanner(index);
-                      }}
-                      className={`w-2 h-2 rounded-full transition-all ${
-                        index === currentBanner 
-                          ? 'bg-pink-500 w-6' 
-                          : 'bg-pink-300'
-                      }`}
-                    />
-                  ))}
-                </div>
-              )}
-            </motion.div>
-          </AnimatePresence>
+        <div className="rounded-3xl overflow-hidden">
+          <BannerCarousel />
         </div>
       </div>
 
